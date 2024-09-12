@@ -1,0 +1,32 @@
+{
+  "jupyter.lab.shortcuts": [
+    {
+      "command": "inline-completer:accept",
+      "keys": ["Alt Tab"],
+      "selector": ".jp-mod-inline-completer-active"
+    },
+    {
+      "command": "inline-completer:invoke",
+      "keys": ["Alt ."],
+      "selector": ".jp-mod-completer-enabled"
+    }
+  ],
+  "title": "Qiskit Code Assistant",
+  "description": "Qiskit Code Assistant settings.",
+  "type": "object",
+  "properties": {
+    "serviceUrl": {
+      "title": "Qiskit Code Assistant Service API",
+      "description": "The Qiskit Code Assistant Service URL",
+      "type": "string",
+      "default": "https://qiskit-code-assistant.quantum.ibm.com"
+    },
+    "enableCompleter": {
+      "title": "Enable Code Completer",
+      "description": "Whether to fetch completions for QiskitCodeAssistant:completer",
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

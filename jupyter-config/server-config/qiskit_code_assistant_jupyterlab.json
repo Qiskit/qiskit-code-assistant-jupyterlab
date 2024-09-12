@@ -1,0 +1,7 @@
+{
+  "ServerApp": {
+    "jpserver_extensions": {
+      "qiskit_code_assistant_jupyterlab": true
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "packageManager": "python",
+  "packageName": "qiskit_code_assistant_jupyterlab",
+  "uninstallInstructions": "Use your Python package manager (pip, conda, etc.) to uninstall the package qiskit_code_assistant_jupyterlab"
+}
