@@ -2,7 +2,7 @@
 
 > This experimental feature is only available, as of today, for some IBM Quantum users.
 > If you are not part of that cohort of users, you can still install this extension; however you will not be able to use the assistant.
-> The Qiskit Code Assistant is a beta release, subject to change.
+> The Qiskit Code Assistant is a preview feature release, subject to change.
 
 Write and optimize Qiskit code with a generative AI code assistant.
 
