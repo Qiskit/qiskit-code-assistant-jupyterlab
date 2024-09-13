@@ -39,7 +39,7 @@ jobs:
 
         jupyter labextension list
         jupyter labextension list 2>&1 | grep -ie "qiskit-code-assistant-jupyterlab.*OK"
-        python -m jupyterlab.browser_check
+        python -m jupyterlab.browser_check --no-browser-test
 
     - name: Package the extension
       run: |

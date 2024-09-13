@@ -41,8 +41,10 @@ def update_token(token):
 def init_token():
     token = os.environ.get("QISKIT_IBM_TOKEN")
 
-    if not token:
-        with open(Path.home() / ".qiskit" / "qiskit-ibm.json") as f:
+    path = Path.home() / ".qiskit" / "qiskit-ibm.json"
+
+    if not token and os.path.exists(path):
+        with open(path) as f:
             config = json.load(f)
         token = config.get("qiskit-code-assistant", {}).get("token")
 
