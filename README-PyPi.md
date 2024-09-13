@@ -1,16 +1,16 @@
 # Qiskit Code Assistant (Beta)
 
 > This experimental feature is only available, as of today, for some IBM Quantum users.
-  If you are not part of that cohort of users, you can still install this extension; however you will not be able to use the assistant.
-  The Qiskit Code Assistant is a beta release, subject to change.
+> If you are not part of that cohort of users, you can still install this extension; however you will not be able to use the assistant.
+> The Qiskit Code Assistant is a beta release, subject to change.
 
 Write and optimize Qiskit code with a generative AI code assistant.
 
-**************
+---
 
 Increase quantum computing developer productivity and learn best practices for Qiskit and IBM Quantum Platform services with Qiskit Code Assistant!
 
-**************
+---
 
 Make programming quantum computers even easier with Qiskit Code Assistant, a generative AI code assistant. Trained with approximately 370 million text tokens from Qiskit SDK v1.x, years of Qiskit code examples, and IBM Quantum features, Qiskit Code Assistant accelerates your quantum development workflow by offering LLM-generated suggestions based on [IBM Granite 8B Code](https://www.ibm.com/products/watsonx-ai/foundation-models) that incorporate the latest features and functionalities from IBM. And soon, Qiskit Code Assistant will be able to be used alongside Qiskit patterns building blocks for reusable code and workflow simplification.
 
@@ -18,10 +18,10 @@ Qiskit is the open-source quantum SDK preferred by 69% of respondents to the Uni
 
 ## Features
 
-* Accelerate Qiskit code generation by leveraging generative AI based on the `granite-8b-qiskit` model
-* Use abstract and specific prompts to generate recommendations
-* Manage code changes by reviewing, accepting, and rejecting suggestions
-* Supports Python code files
+- Accelerate Qiskit code generation by leveraging generative AI based on the `granite-8b-qiskit` model
+- Use abstract and specific prompts to generate recommendations
+- Manage code changes by reviewing, accepting, and rejecting suggestions
+- Supports Python code files
 
 ## Learn the best ways to use Qiskit and IBM Quantum Platform services
 
@@ -124,8 +124,8 @@ There are a few settings we recommend to edit in your user settings.
 
 ## Terms of use
 
-* Terms of use: [https://quantum.ibm.com/terms](https://quantum.ibm.com/terms)
-* Privacy policy: [https://quantum.ibm.com/terms/privacy](https://quantum.ibm.com/terms/privacy)
-* Cloud Services Agreement [https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en](https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en)
-* IBM Cloud Service Description [https://www.ibm.com/support/customer/csol/terms/?id=i126-6605&lc=en](https://www.ibm.com/support/customer/csol/terms/?id=i126-6605&lc=en)
-* EULA acceptance required before starting to use the model
+- Terms of use: [https://quantum.ibm.com/terms](https://quantum.ibm.com/terms)
+- Privacy policy: [https://quantum.ibm.com/terms/privacy](https://quantum.ibm.com/terms/privacy)
+- Cloud Services Agreement [https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en](https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en)
+- IBM Cloud Service Description [https://www.ibm.com/support/customer/csol/terms/?id=i126-6605&lc=en](https://www.ibm.com/support/customer/csol/terms/?id=i126-6605&lc=en)
+- EULA acceptance required before starting to use the model
