@@ -36,6 +36,15 @@ pip uninstall qiskit_code_assistant_jupyterlab
 
 For help setting up and using the Qiskit Code Assistant read [GETTING_STARTED](GETTING_STARTED.md).
 
+### Terms of use
+
+- Terms of use: [https://quantum.ibm.com/terms](https://quantum.ibm.com/terms)
+- Privacy policy: [https://quantum.ibm.com/terms/privacy](https://quantum.ibm.com/terms/privacy)
+- Cloud Services Agreement [https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en](https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en)
+- IBM Cloud Service Description [https://www.ibm.com/support/customer/csol/terms/?id=i126-6605&lc=en](https://www.ibm.com/support/customer/csol/terms/?id=i126-6605&lc=en)
+- [End User License Agreement (EULA)](docs/EULA.md) acceptance required before starting to use the model acceptance required before starting to use the model
+
+
 ## Contributing
 
 To learn more about contributing or installing locally read [CONTRIBUTING](CONTRIBUTING.md).
