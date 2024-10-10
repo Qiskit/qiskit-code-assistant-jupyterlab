@@ -16,6 +16,7 @@
 
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -27,7 +28,7 @@ from qiskit_ibm_runtime import QiskitRuntimeService
 runtime_configs = {
     "service_url": "http://localhost",
     "api_token": "",
-    "is_ollama": False,
+    "is_openai": False,
 }
 
 
@@ -64,19 +65,19 @@ def get_header():
         "Content-Type": "application/json",
         "X-Caller": "qiskit-code-assistant-jupyterlab",
     }
-    if not runtime_configs["is_ollama"]:
+    if not runtime_configs["is_openai"]:
         header["Authorization"] = f"Bearer {runtime_configs['api_token']}"
     return header
 
 
-def convert_ollama(model):
+def convert_openai(model):
     return {
-        "_id": model["model"],
+        "_id": model["id"],
         "disclaimer": {"accepted": "true"},
-        "display_name": model["name"],
+        "display_name": model["id"],
         "doc_link": "",
         "license": {"name": "", "link": ""},
-        "model_id": model["model"],
+        "model_id": model["id"],
         "prompt_type": 1,
         "token_limit": 255
     }
@@ -95,8 +96,9 @@ class ServiceUrlHandler(APIHandler):
 
         try:
             r = requests.get(url_path_join(runtime_configs["service_url"]), headers=get_header())
-            # TODO: Replace with a check against the QCA service instead
-            runtime_configs["is_ollama"] = ("Ollama is running" in r.text)
+            runtime_configs["is_openai"] = (r.json()["name"] != "qiskit-code-assistant")
+        except requests.exceptions.JSONDecodeError:
+            runtime_configs["is_openai"] = True
         finally:
             self.finish(json.dumps({"url": runtime_configs["service_url"]}))
 
@@ -105,7 +107,7 @@ class TokenHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
         self.finish(json.dumps({"success": (runtime_configs["api_token"] != ""
-                                            or runtime_configs["is_ollama"])}))
+                                            or runtime_configs["is_openai"])}))
 
     @tornado.web.authenticated
     def post(self):
@@ -119,16 +121,16 @@ class TokenHandler(APIHandler):
 class ModelsHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        if runtime_configs["is_ollama"]:
-            url = url_path_join(runtime_configs["service_url"], "api", "tags")
+        if runtime_configs["is_openai"]:
+            url = url_path_join(runtime_configs["service_url"], "v1", "models")
             models = []
             try:
                 r = requests.get(url, headers=get_header())
                 r.raise_for_status()
 
                 if r.ok:
-                    ollama_models = r.json()["models"]
-                    models = list(map(convert_ollama, ollama_models))
+                    data = r.json()["data"]
+                    models = list(map(convert_openai, data))
             except requests.exceptions.HTTPError as err:
                 self.set_status(err.response.status_code)
                 self.finish(json.dumps(err.response.json()))
@@ -150,9 +152,20 @@ class ModelsHandler(APIHandler):
 class ModelHandler(APIHandler):
     @tornado.web.authenticated
     def get(self, id):
-        if runtime_configs["is_ollama"]:
-            self.set_status(501, "Not implemented")
-            self.finish()
+        if runtime_configs["is_openai"]:
+            url = url_path_join(runtime_configs["service_url"], "v1", "models", id)
+            model = {}
+            try:
+                r = requests.get(url, headers=get_header())
+                r.raise_for_status()
+
+                if r.ok:
+                    model = convert_openai(r.json())
+            except requests.exceptions.HTTPError as err:
+                self.set_status(err.response.status_code)
+                self.finish(json.dumps(err.response.json()))
+            else:
+                self.finish(json.dumps(model))
         else:
             url = url_path_join(runtime_configs["service_url"], "model", id)
 
@@ -169,7 +182,7 @@ class ModelHandler(APIHandler):
 class DisclaimerHandler(APIHandler):
     @tornado.web.authenticated
     def get(self, id):
-        if runtime_configs["is_ollama"]:
+        if runtime_configs["is_openai"]:
             self.set_status(501, "Not implemented")
             self.finish()
         else:
@@ -188,7 +201,7 @@ class DisclaimerHandler(APIHandler):
 class DisclaimerAcceptanceHandler(APIHandler):
     @tornado.web.authenticated
     def post(self, id):
-        if runtime_configs["is_ollama"]:
+        if runtime_configs["is_openai"]:
             self.set_status(501, "Not implemented")
             self.finish()
         else:
@@ -209,25 +222,25 @@ class DisclaimerAcceptanceHandler(APIHandler):
 class PromptHandler(APIHandler):
     @tornado.web.authenticated
     def post(self, id):
-        if runtime_configs["is_ollama"]:
-            url = url_path_join(runtime_configs["service_url"], "api", "generate")
+        if runtime_configs["is_openai"]:
+            url = url_path_join(runtime_configs["service_url"], "v1", "completions")
             result = {}
             try:
                 r = requests.post(url,
                                   headers=get_header(),
                                   json={
                                       "model": id,
-                                      "prompt": self.get_json_body()["input"],
-                                      "stream": False
+                                      "prompt": self.get_json_body()["input"]
                                   })
                 r.raise_for_status()
 
                 if r.ok:
-                    ollama_response = r.json()
+                    response = r.json()
                     result = {
-                        "results": [{"generated_text": ollama_response["response"]}],
-                        "prompt_id": ollama_response["created_at"],
-                        "created_at": ollama_response["created_at"]
+                        "results": list(map(lambda c: {"generated_text": c["text"]},
+                                            response["choices"])),
+                        "prompt_id": response["id"],
+                        "created_at": datetime.fromtimestamp(int(response["created"])).isoformat()
                     }
             except requests.exceptions.HTTPError as err:
                 self.set_status(err.response.status_code)
@@ -250,7 +263,7 @@ class PromptHandler(APIHandler):
 class PromptAcceptanceHandler(APIHandler):
     @tornado.web.authenticated
     def post(self, id):
-        if runtime_configs["is_ollama"]:
+        if runtime_configs["is_openai"]:
             self.finish(json.dumps({"success": "true"}))
         else:
             url = url_path_join(runtime_configs["service_url"], "prompt", id, "acceptance")
@@ -267,7 +280,7 @@ class PromptAcceptanceHandler(APIHandler):
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
-    id_regex = r"(?P<id>[\w\-\_\.\:]+)" # valid chars: alphanum | "-" | "_" | "." | ":"
+    id_regex = r"(?P<id>[\w\-\_\.\:]+)"  # valid chars: alphanum | "-" | "_" | "." | ":"
     base_url = url_path_join(web_app.settings["base_url"], "qiskit-code-assistant")
 
     handlers = [
