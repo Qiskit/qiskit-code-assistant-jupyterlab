@@ -25,6 +25,8 @@ from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
 from qiskit_ibm_runtime import QiskitRuntimeService
 
+OPENAI_VERSION = "v1"
+
 runtime_configs = {
     "service_url": "http://localhost",
     "api_token": "",
@@ -97,7 +99,7 @@ class ServiceUrlHandler(APIHandler):
         try:
             r = requests.get(url_path_join(runtime_configs["service_url"]), headers=get_header())
             runtime_configs["is_openai"] = (r.json()["name"] != "qiskit-code-assistant")
-        except requests.exceptions.JSONDecodeError:
+        except (requests.exceptions.JSONDecodeError, KeyError):
             runtime_configs["is_openai"] = True
         finally:
             self.finish(json.dumps({"url": runtime_configs["service_url"]}))
@@ -122,7 +124,7 @@ class ModelsHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
         if runtime_configs["is_openai"]:
-            url = url_path_join(runtime_configs["service_url"], "v1", "models")
+            url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "models")
             models = []
             try:
                 r = requests.get(url, headers=get_header())
@@ -153,7 +155,7 @@ class ModelHandler(APIHandler):
     @tornado.web.authenticated
     def get(self, id):
         if runtime_configs["is_openai"]:
-            url = url_path_join(runtime_configs["service_url"], "v1", "models", id)
+            url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "models", id)
             model = {}
             try:
                 r = requests.get(url, headers=get_header())
@@ -223,7 +225,7 @@ class PromptHandler(APIHandler):
     @tornado.web.authenticated
     def post(self, id):
         if runtime_configs["is_openai"]:
-            url = url_path_join(runtime_configs["service_url"], "v1", "completions")
+            url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "completions")
             result = {}
             try:
                 r = requests.post(url,
