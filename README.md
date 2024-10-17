@@ -13,7 +13,7 @@ for the frontend extension.
 
 ## Requirements
 
-- JupyterLab >= 4.2.0
+- JupyterLab >= 4.3.0
 - An IBM Quantum premium account
 
 ## Install

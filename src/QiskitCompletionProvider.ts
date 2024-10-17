@@ -63,6 +63,7 @@ export class QiskitCompletionProvider implements ICompletionProvider {
 
   settings: ISettingRegistry.ISettings;
   prompt_id: string = '';
+  results: string[] = [];
 
   constructor(options: { settings: ISettingRegistry.ISettings }) {
     this.settings = options.settings;
@@ -76,6 +77,7 @@ export class QiskitCompletionProvider implements ICompletionProvider {
 
     return autoComplete(text).then(results => {
       this.prompt_id = results.prompt_id;
+      this.results = results.items;
       return {
         start: request.offset,
         end: request.offset,
@@ -97,8 +99,8 @@ export class QiskitCompletionProvider implements ICompletionProvider {
     return this.settings.composite['enableCompleter'] as boolean;
   }
 
-  accept() {
-    if (this.prompt_id) {
+  accept(text: string) {
+    if (this.prompt_id && this.results.includes(text)) {
       postModelPromptAccept(this.prompt_id);
     }
   }
