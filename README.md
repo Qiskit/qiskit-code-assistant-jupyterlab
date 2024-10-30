@@ -13,7 +13,7 @@ for the frontend extension.
 
 ## Requirements
 
-- JupyterLab >= 4.2.0
+- JupyterLab >= 4.3.0
 - Access to either:
   - An IBM Quantum premium account
   - A model with an OpenAI compatible API endpoint
