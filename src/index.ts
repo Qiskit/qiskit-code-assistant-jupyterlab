@@ -96,12 +96,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
       category: 'Qiskit Code Assistant'
     });
 
-    completionProviderManager.selected.connect((completer, selection) =>
-      provider.accept(selection.insertText)
-    );
+    completionProviderManager.selected.connect((completer, selection) => {
+      if (settings.composite['enableTelemetry'] as boolean) {
+        provider.accept(selection.insertText)
+      }
+    });
 
     app.commands.commandExecuted.connect((registry, executed) => {
-      if (executed.id === CommandIDs.acceptInline) {
+      if (
+        executed.id === CommandIDs.acceptInline &&
+        settings.composite['enableTelemetry'] as boolean
+      ) {
         inlineProvider.accept();
       }
     });
