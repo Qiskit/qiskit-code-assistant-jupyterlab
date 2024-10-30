@@ -54,12 +54,14 @@ export function getFeedback(prompt: boolean = true) {
     label: prompt ? lastPrompt?.items[0] : undefined
   }).then(result => {
     // send feedback
-    sendFeedback(
-      getCurrentModel()?._id,
-      prompt ? lastPrompt?.prompt_id : undefined,
-      undefined,
-      result.value || undefined
-    );
+    if (result.button.accept) {
+      sendFeedback(
+        getCurrentModel()?._id,
+        prompt ? lastPrompt?.prompt_id : undefined,
+        undefined,
+        result.value || undefined
+      );
+    }
   });
 }
 
