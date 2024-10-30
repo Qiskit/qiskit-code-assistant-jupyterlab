@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
+.jp-qiskit-code-assistant-feedback {
+  cursor: pointer;
+}
+
 .jp-qiskit-code-assistant-statusbar {
   margin: 4px;
   cursor: pointer;
 }
 
 .jp-qiskit-code-assistant-statusbar-warn {
-  background-color: var(--jp-warn-color3);
+  background-color: var(--jp-warn-color1);
+  color: var(--jp-ui-inverse-font-color1);
+}
+
+.jp-qiskit-code-assistant-statusbar-warn:hover {
+  background-color: var(--jp-warn-color0);
 }
 
 .jp-Completer-item .jp-Completer-icon {

@@ -11,6 +11,15 @@
       "selector": ".jp-mod-completer-enabled"
     }
   ],
+  "jupyter.lab.toolbars": {
+    "Cell": [
+      {
+        "name": "prompt-feedback",
+        "command": "qiskit-code-assistant:prompt-feedback",
+        "rank": 0
+      }
+    ]
+  },
   "title": "Qiskit Code Assistant",
   "description": "Qiskit Code Assistant settings.",
   "type": "object",

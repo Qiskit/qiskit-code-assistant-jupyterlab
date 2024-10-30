@@ -20,17 +20,21 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { ICompletionProviderManager } from '@jupyterlab/completer';
+import { INotebookTracker } from '@jupyterlab/notebook';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { IStatusBar } from '@jupyterlab/statusbar';
 
 import { StatusBarWidget } from './StatusBarWidget';
 import {
+  lastPrompt,
   QiskitCompletionProvider,
   QiskitInlineCompletionProvider
 } from './QiskitCompletionProvider';
 import { postServiceUrl } from './service/api';
+import { getFeedbackStatusBarWidget, getFeedback } from './service/feedback';
 import { refreshModelsList } from './service/modelHandler';
 import { updateAPIToken } from './service/token';
+import { feedbackIcon } from './utils/icons';
 
 const EXTENSION_ID = 'qiskit-code-assistant-jupyterlab';
 
@@ -39,6 +43,7 @@ namespace CommandIDs {
   export const selectCompleterNotebook = 'completer:select-notebook';
   export const selectCompleterFile = 'completer:select-file';
   export const updateApiToken = 'qiskit-code-assistant:set-api-token';
+  export const promptFeedback = 'qiskit-code-assistant:prompt-feedback';
 }
 
 /**
@@ -50,6 +55,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
   autoStart: true,
   requires: [
     ICompletionProviderManager,
+    INotebookTracker,
     ICommandPalette,
     ISettingRegistry,
     IStatusBar
@@ -57,6 +63,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
   activate: async (
     app: JupyterFrontEnd,
     completionProviderManager: ICompletionProviderManager,
+    notebookTracker: INotebookTracker,
     palette: ICommandPalette,
     settingRegistry: ISettingRegistry,
     statusBar: IStatusBar
@@ -71,10 +78,15 @@ const plugin: JupyterFrontEndPlugin<void> = {
       postServiceUrl(settings.composite['serviceUrl'] as string)
     );
 
-    const provider = new QiskitCompletionProvider({ settings });
-    const inlineProvider = new QiskitInlineCompletionProvider();
+    const provider = new QiskitCompletionProvider({ settings, app });
+    const inlineProvider = new QiskitInlineCompletionProvider({ app });
     completionProviderManager.registerProvider(provider);
     completionProviderManager.registerInlineProvider(inlineProvider);
+
+    statusBar.registerStatusItem(EXTENSION_ID + ':feedback', {
+      item: getFeedbackStatusBarWidget(),
+      align: 'left'
+    });
 
     const statusBarWidget = new StatusBarWidget();
     statusBar.registerStatusItem(EXTENSION_ID + ':statusbar', {
@@ -84,6 +96,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     await refreshModelsList().catch(reason => {
       console.error('Failed initial load of models list', reason);
+    });
+
+    app.commands.addCommand(CommandIDs.promptFeedback, {
+      label: 'Give feedback for the Qiskit Code Assistant',
+      icon: feedbackIcon,
+      execute: () => getFeedback(),
+      isEnabled: () => lastPrompt !== undefined,
+      isVisible: () =>
+        ['code', 'markdown'].includes(
+          notebookTracker.activeCell?.model.type || ''
+        ) && lastPrompt !== undefined
     });
 
     app.commands.addCommand(CommandIDs.updateApiToken, {
