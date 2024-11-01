@@ -114,7 +114,6 @@ There are a few settings we recommend to edit in your user settings.
    extension should use you can edit the Qiskit Code Assistant setting `serviceUrl`.
    This can also be set to any OpenAI compatible API endpoint.
 
-
 4. Keyboard shortcuts can be changed by searching for `completer` in the Keyboard Shortcuts
    settings and adding new shortcuts for the relevant commands.
 
