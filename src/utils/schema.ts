@@ -89,3 +89,8 @@ export interface ICompletionReturn {
   items: string[];
   prompt_id: string;
 }
+
+export interface IFeedbackForm {
+  positive_feedback?: string;
+  comment?: string;
+}

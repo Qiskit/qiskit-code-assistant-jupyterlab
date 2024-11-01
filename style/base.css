@@ -18,6 +18,23 @@
   cursor: pointer;
 }
 
+.positive-feedback {
+  font-size: large;
+}
+.jp-qiskit-code-assistant-feedback-prompt pre {
+  overflow: auto;
+  max-height: 200px;
+  border: solid thin;
+}
+
+.jp-qiskit-code-assistant-feedback-prompt textarea,
+.jp-qiskit-code-assistant-feedback-general textarea {
+  width: 30em;
+  height: 5em;
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .jp-qiskit-code-assistant-statusbar {
   margin: 4px;
   cursor: pointer;
