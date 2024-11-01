@@ -122,6 +122,8 @@ There are a few settings we recommend to edit in your user settings.
 4. Keyboard shortcuts can be changed by searching for `completer` in the Keyboard Shortcuts
    settings and adding new shortcuts for the relevant commands.
 
+5. Telemetry can be disabled by unselecting the `enableTelemetry` setting.
+
 ## Terms of use
 
 - [End User License Agreement (EULA)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/blob/main/docs/EULA.md) acceptance required before starting to use the model acceptance required before starting to use the model
