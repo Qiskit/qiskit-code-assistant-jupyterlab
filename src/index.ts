@@ -98,14 +98,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     completionProviderManager.selected.connect((completer, selection) => {
       if (settings.composite['enableTelemetry'] as boolean) {
-        provider.accept(selection.insertText)
+        provider.accept(selection.insertText);
       }
     });
 
     app.commands.commandExecuted.connect((registry, executed) => {
       if (
         executed.id === CommandIDs.acceptInline &&
-        settings.composite['enableTelemetry'] as boolean
+        (settings.composite['enableTelemetry'] as boolean)
       ) {
         inlineProvider.accept();
       }
