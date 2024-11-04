@@ -116,7 +116,7 @@ There are a few settings we recommend to edit in your user settings.
 4. Keyboard shortcuts can be changed by searching for `completer` in the Keyboard Shortcuts
    settings and adding new shortcuts for the relevant commands.
 
-5. Telemetry can be disabled by unselecting the `enableTelemetry` setting.
+5. Telemetry can be disabled by unchecking the `enableTelemetry` setting.
 
 ## Troubleshooting
 

@@ -29,7 +29,7 @@
     },
     "enableTelemetry": {
       "title": "Enable Telemetry",
-      "description": "Send telemetry to the The Qiskit Code Assistant Service",
+      "description": "Send telemetry to the Qiskit Code Assistant Service",
       "type": "boolean",
       "default": true
     }
