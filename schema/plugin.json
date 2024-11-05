@@ -26,6 +26,12 @@
       "description": "Whether to fetch completions for QiskitCodeAssistant:completer",
       "type": "boolean",
       "default": true
+    },
+    "enableTelemetry": {
+      "title": "Enable Telemetry",
+      "description": "Send telemetry to the Qiskit Code Assistant Service",
+      "type": "boolean",
+      "default": true
     }
   },
   "additionalProperties": false
