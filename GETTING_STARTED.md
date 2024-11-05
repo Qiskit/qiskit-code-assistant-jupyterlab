@@ -118,6 +118,9 @@ There are a few settings we recommend to edit in your user settings.
 
 5. Telemetry can be disabled by unchecking the `enableTelemetry` setting.
 
+    > **NOTE**: The telemetry does not collect your code nor the suggested code completions.
+    What is collected is whether a code suggestion was accepted or dismissed.
+
 ## Troubleshooting
 
 If you are seeing the frontend extension, but it is not working, check that the server
