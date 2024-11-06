@@ -36,14 +36,19 @@ async function promptPromise(
       response.results.map(results => items.push(results.generated_text));
       return {
         items,
-        prompt_id: response.prompt_id
+        prompt_id: response.prompt_id,
+        input: requestText
       };
     }
   );
 }
 
 export async function autoComplete(text: string): Promise<ICompletionReturn> {
-  const emptyReturn: ICompletionReturn = { items: [], prompt_id: '' };
+  const emptyReturn: ICompletionReturn = {
+    items: [],
+    prompt_id: '',
+    input: ''
+  };
 
   return await checkAPIToken()
     .then(async () => {

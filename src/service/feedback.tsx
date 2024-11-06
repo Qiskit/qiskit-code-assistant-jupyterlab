@@ -60,11 +60,12 @@ export function getFeedbackStatusBarWidget() {
 export function getFeedback(prompt: boolean = true) {
   const model_id = getCurrentModel()?._id;
   const prompt_id = prompt ? lastPrompt?.prompt_id : undefined;
-  const prompt_text = prompt ? lastPrompt?.items[0] : undefined;
+  const prompt_input = prompt ? lastPrompt?.input : undefined;
+  const prompt_output = prompt ? lastPrompt?.items[0] : undefined;
 
   const dialog = new Dialog({
     title: 'Qiskit Code Assistant Feedback',
-    body: getFeedbackBodyWidget(prompt_text),
+    body: getFeedbackBodyWidget(prompt_output),
     buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Submit' })],
     focusNodeSelector: '.jp-qiskit-code-assistant-feedback-form textarea'
   });
@@ -90,7 +91,9 @@ export function getFeedback(prompt: boolean = true) {
         model_id,
         prompt_id,
         toBool(result.value?.positive_feedback),
-        result.value?.comment
+        result.value?.comment,
+        prompt_input,
+        prompt_output
       ).then((response: IFeedbackResponse) => {
         Notification.info(`Qiskit Code Assistant:\n${response['message']}`, {
           autoClose: 5000
