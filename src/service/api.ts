@@ -18,6 +18,7 @@ import { Notification } from '@jupyterlab/apputils';
 
 import { requestAPI } from '../utils/handler';
 import {
+  IFeedbackResponse,
   IModelDisclaimer,
   IModelInfo,
   IModelPromptResponse,
@@ -222,6 +223,40 @@ export async function postModelPromptAccept(
       notifyInvalid(response);
       console.error(
         'Error accepting prompt',
+        response.status,
+        response.statusText
+      );
+      throw Error(response.statusText);
+    }
+  });
+}
+
+// POST /feedback
+export async function postFeedback(
+  model_id?: string,
+  prompt_id?: string,
+  positive_feedback?: boolean,
+  comment?: string,
+  input?: string,
+  output?: string
+): Promise<IFeedbackResponse> {
+  return await requestAPI('feedback', {
+    method: 'POST',
+    body: JSON.stringify({
+      model_id,
+      prompt_id,
+      positive_feedback,
+      comment,
+      input,
+      output
+    })
+  }).then(async response => {
+    if (response.ok) {
+      return await response.json();
+    } else {
+      notifyInvalid(response);
+      console.error(
+        'Error sending feedback',
         response.status,
         response.statusText
       );

@@ -183,6 +183,21 @@ class PromptAcceptanceHandler(APIHandler):
             self.finish(json.dumps(r.json()))
 
 
+class FeedbackHandler(APIHandler):
+    @tornado.web.authenticated
+    def post(self):
+        url = url_path_join(runtime_configs["service_url"], "feedback")
+
+        try:
+            r = requests.post(url, headers=get_header(), json=self.get_json_body())
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            self.set_status(err.response.status_code)
+            self.finish(json.dumps(err.response.json()))
+        else:
+            self.finish(json.dumps(r.json()))
+
+
 def setup_handlers(web_app):
     host_pattern = ".*$"
     id_regex = r"(?P<id>[\w\-]+)"
@@ -197,6 +212,7 @@ def setup_handlers(web_app):
         (f"{base_url}/disclaimer/{id_regex}/acceptance", DisclaimerAcceptanceHandler),
         (f"{base_url}/model/{id_regex}/prompt", PromptHandler),
         (f"{base_url}/prompt/{id_regex}/acceptance", PromptAcceptanceHandler),
+        (f"{base_url}/feedback", FeedbackHandler),
     ]
     web_app.add_handlers(host_pattern, handlers)
     init_token()

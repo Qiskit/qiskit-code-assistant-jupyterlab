@@ -14,13 +14,40 @@
  * limitations under the License.
  */
 
+.jp-qiskit-code-assistant-feedback {
+  cursor: pointer;
+}
+
+.positive-feedback {
+  font-size: large;
+}
+
+.jp-qiskit-code-assistant-feedback-prompt pre {
+  overflow: auto;
+  max-height: 200px;
+  border: solid thin;
+}
+
+.jp-qiskit-code-assistant-feedback-prompt textarea,
+.jp-qiskit-code-assistant-feedback-general textarea {
+  width: 30em;
+  height: 5em;
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .jp-qiskit-code-assistant-statusbar {
   margin: 4px;
   cursor: pointer;
 }
 
 .jp-qiskit-code-assistant-statusbar-warn {
-  background-color: var(--jp-warn-color3);
+  background-color: var(--jp-warn-color1);
+  color: var(--jp-ui-inverse-font-color1);
+}
+
+.jp-qiskit-code-assistant-statusbar-warn:hover {
+  background-color: var(--jp-warn-color0);
 }
 
 .jp-Completer-item .jp-Completer-icon {

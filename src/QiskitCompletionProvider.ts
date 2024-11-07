@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { JupyterFrontEnd } from '@jupyterlab/application';
 import {
   CompletionHandler,
   ICompletionContext,
@@ -32,6 +33,11 @@ import { Widget } from '@lumino/widgets';
 import { postModelPromptAccept } from './service/api';
 import { autoComplete } from './service/autocomplete';
 import { qiskitIcon } from './utils/icons';
+import { ICompletionReturn } from './utils/schema';
+
+const FEEDBACK_COMMAND = 'qiskit-code-assistant:prompt-feedback';
+
+export let lastPrompt: ICompletionReturn | undefined = undefined;
 
 function getInputText(text: string, widget: Widget): string {
   const cellsContents: string[] = [];
@@ -62,11 +68,16 @@ export class QiskitCompletionProvider implements ICompletionProvider {
   readonly rank: number = 1100;
 
   settings: ISettingRegistry.ISettings;
+  app: JupyterFrontEnd;
   prompt_id: string = '';
   results: string[] = [];
 
-  constructor(options: { settings: ISettingRegistry.ISettings }) {
+  constructor(options: {
+    settings: ISettingRegistry.ISettings;
+    app: JupyterFrontEnd;
+  }) {
     this.settings = options.settings;
+    this.app = options.app;
   }
 
   async fetch(
@@ -78,6 +89,10 @@ export class QiskitCompletionProvider implements ICompletionProvider {
     return autoComplete(text).then(results => {
       this.prompt_id = results.prompt_id;
       this.results = results.items;
+      if (this.prompt_id) {
+        lastPrompt = results;
+        this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
+      }
       return {
         start: request.offset,
         end: request.offset,
@@ -113,6 +128,7 @@ export class QiskitInlineCompletionProvider
   readonly identifier: string = 'qiskit-code-assistant-inline-completer';
   readonly name: string = 'Qiskit Code Assistant';
 
+  app: JupyterFrontEnd;
   prompt_id: string = '';
   schema: ISettingRegistry.IProperty = {
     default: {
@@ -120,6 +136,10 @@ export class QiskitInlineCompletionProvider
       timeout: 10000
     }
   };
+
+  constructor(options: { app: JupyterFrontEnd }) {
+    this.app = options.app;
+  }
 
   async fetch(
     request: CompletionHandler.IRequest,
@@ -134,6 +154,11 @@ export class QiskitInlineCompletionProvider
 
     return autoComplete(text).then(results => {
       this.prompt_id = results.prompt_id;
+      if (this.prompt_id) {
+        lastPrompt = results;
+        this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
+      }
+
       return {
         items: results.items.map((item: string): IInlineCompletionItem => {
           return { insertText: item };
