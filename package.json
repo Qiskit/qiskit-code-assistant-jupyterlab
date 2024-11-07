@@ -1,6 +1,6 @@
 {
     "name": "qiskit-code-assistant-jupyterlab",
-    "version": "0.3.2",
+    "version": "0.4.0-rc.0",
     "description": "AI Autocomplete JupyterLab extension for Qiskit Code Assistant (Beta)",
     "keywords": [
         "jupyter",
