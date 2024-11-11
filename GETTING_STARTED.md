@@ -3,7 +3,9 @@
 ## Requirements
 
 - JupyterLab >= 4.3.0
-- An IBM Quantum premium account
+- Access to either:
+  - An IBM Quantum premium account
+  - A service exposing LLMs using OpenAI-compatible API endpoints
 
 ## Install
 
@@ -112,7 +114,7 @@ There are a few settings we recommend to edit in your user settings.
 
 3. If you want to change the instance of the Qiskit Code Assistant Service that the
    extension should use you can edit the Qiskit Code Assistant setting `serviceUrl`.
-   This can also be set to any OpenAI compatible API endpoint.
+   This can also be set to any service exposing LLMs using OpenAI-compatible API endpoints.
 
 4. Keyboard shortcuts can be changed by searching for `completer` in the Keyboard Shortcuts
    settings and adding new shortcuts for the relevant commands.
