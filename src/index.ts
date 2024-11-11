@@ -75,7 +75,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     postServiceUrl(settings.composite['serviceUrl'] as string);
     settings.changed.connect(() =>
-      postServiceUrl(settings.composite['serviceUrl'] as string)
+      postServiceUrl(settings.composite['serviceUrl'] as string).then(() =>
+        refreshModelsList()
+      )
     );
 
     const provider = new QiskitCompletionProvider({ settings, app });

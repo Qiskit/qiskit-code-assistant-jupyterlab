@@ -1,7 +1,5 @@
 # Qiskit Code Assistant (Beta)
 
-> This experimental feature is only available, as of today, to IBM Quantum premium users.
-> If you are not part of the IBM Quantum premium plan, you can still install this extension; however you will not be able to use the assistant.
 > The Qiskit Code Assistant is a beta release, subject to change.
 
 Write and optimize Qiskit code with a generative AI code assistant.
@@ -117,7 +115,8 @@ There are a few settings we recommend to edit in your user settings.
    `Tab`, the inline completer has a default of 10 seconds.
 
 3. If you want to change the instance of the Qiskit Code Assistant Service that the
-   extension should use you can edit the Qiskit Code Assistant setting `serviceUrl`
+   extension should use you can edit the Qiskit Code Assistant setting `serviceUrl`.
+   This can also be set to any service exposing LLMs using OpenAI-compatible API endpoints.
 
 4. Keyboard shortcuts can be changed by searching for `completer` in the Keyboard Shortcuts
    settings and adding new shortcuts for the relevant commands.

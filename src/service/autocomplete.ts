@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { getModel, postModelPrompt } from './api';
+import { postModelPrompt } from './api';
 import { showDisclaimer } from './disclaimer';
 import { getCurrentModel } from './modelHandler';
 import { checkAPIToken } from './token';
@@ -56,25 +56,21 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
       const requestText = text.slice(startingOffset, text.length);
       const model = getCurrentModel();
 
-      return await getModel(model?._id || '')
-        .then(async model => {
-          if (model.disclaimer?.accepted) {
+      if (model === undefined) {
+        console.error('Failed to send prompt', 'No model selected');
+        return emptyReturn;
+      } else if (model.disclaimer?.accepted) {
+        return await promptPromise(model._id, requestText);
+      } else {
+        return await showDisclaimer(model._id).then(async accepted => {
+          if (accepted) {
             return await promptPromise(model._id, requestText);
           } else {
-            return await showDisclaimer(model._id).then(async accepted => {
-              if (accepted) {
-                return await promptPromise(model._id, requestText);
-              } else {
-                console.error('Disclaimer not accepted');
-                return emptyReturn;
-              }
-            });
+            console.error('Disclaimer not accepted');
+            return emptyReturn;
           }
-        })
-        .catch(reason => {
-          console.error('Failed to send prompt', reason);
-          return emptyReturn;
         });
+      }
     })
     .catch(reason => {
       console.error('Failed to send prompt', reason);

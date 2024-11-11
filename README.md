@@ -14,7 +14,9 @@ for the frontend extension.
 ## Requirements
 
 - JupyterLab >= 4.3.0
-- An IBM Quantum premium account
+- Access to either:
+  - An IBM Quantum premium account
+  - A service exposing LLMs using OpenAI-compatible API endpoints
 
 ## Install
 
