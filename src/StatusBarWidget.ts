@@ -72,7 +72,8 @@ export class StatusBarWidget extends Widget {
       const modelsList = getModelsList();
       InputDialog.getItem({
         title: 'Select a Model',
-        items: [...modelsList.map(m => m.display_name)]
+        items: [...modelsList.map(m => m.display_name)],
+        current: getCurrentModel()?.display_name
       }).then(result => {
         if (result.button.accept) {
           const model = modelsList.find(m => m.display_name === result.value);

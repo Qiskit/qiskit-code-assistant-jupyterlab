@@ -185,8 +185,7 @@ class DisclaimerHandler(APIHandler):
     @tornado.web.authenticated
     def get(self, id):
         if runtime_configs["is_openai"]:
-            self.set_status(501, "Not implemented")
-            self.finish()
+            self.finish(json.dumps({"accepted": "true"}))
         else:
             url = url_path_join(runtime_configs["service_url"], "model", id, "disclaimer")
 
@@ -204,8 +203,7 @@ class DisclaimerAcceptanceHandler(APIHandler):
     @tornado.web.authenticated
     def post(self, id):
         if runtime_configs["is_openai"]:
-            self.set_status(501, "Not implemented")
-            self.finish()
+            self.finish(json.dumps({"success": "true"}))
         else:
             url = url_path_join(
                 runtime_configs["service_url"], "disclaimer", id, "acceptance"
@@ -283,16 +281,19 @@ class PromptAcceptanceHandler(APIHandler):
 class FeedbackHandler(APIHandler):
     @tornado.web.authenticated
     def post(self):
-        url = url_path_join(runtime_configs["service_url"], "feedback")
-
-        try:
-            r = requests.post(url, headers=get_header(), json=self.get_json_body())
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            self.set_status(err.response.status_code)
-            self.finish(json.dumps(err.response.json()))
+        if runtime_configs["is_openai"]:
+            self.finish(json.dumps({"success": "true"}))
         else:
-            self.finish(json.dumps(r.json()))
+            url = url_path_join(runtime_configs["service_url"], "feedback")
+
+            try:
+                r = requests.post(url, headers=get_header(), json=self.get_json_body())
+                r.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                self.set_status(err.response.status_code)
+                self.finish(json.dumps(err.response.json()))
+            else:
+                self.finish(json.dumps(r.json()))
 
 
 def setup_handlers(web_app):
