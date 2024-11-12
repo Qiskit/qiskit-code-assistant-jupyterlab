@@ -39,6 +39,8 @@ const FEEDBACK_COMMAND = 'qiskit-code-assistant:prompt-feedback';
 
 export let lastPrompt: ICompletionReturn | undefined = undefined;
 
+export const wipeLastPrompt = () => (lastPrompt = undefined);
+
 function getInputText(text: string, widget: Widget): string {
   const cellsContents: string[] = [];
 

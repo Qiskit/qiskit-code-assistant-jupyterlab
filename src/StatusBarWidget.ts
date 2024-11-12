@@ -19,6 +19,7 @@ import { Message } from '@lumino/messaging';
 import { refreshIcon } from '@jupyterlab/ui-components';
 import { Widget } from '@lumino/widgets';
 
+import { wipeLastPrompt } from './QiskitCompletionProvider';
 import { showDisclaimer } from './service/disclaimer';
 import {
   getCurrentModel,
@@ -70,9 +71,11 @@ export class StatusBarWidget extends Widget {
   async onClick() {
     await checkAPIToken().then(() => {
       const modelsList = getModelsList();
+      const dropDownList = [...modelsList.map(m => m.display_name)];
       InputDialog.getItem({
         title: 'Select a Model',
-        items: [...modelsList.map(m => m.display_name)]
+        items: dropDownList,
+        current: dropDownList.indexOf(getCurrentModel()?.display_name || '')
       }).then(result => {
         if (result.button.accept) {
           const model = modelsList.find(m => m.display_name === result.value);
@@ -80,6 +83,7 @@ export class StatusBarWidget extends Widget {
           if (model) {
             showDisclaimer(model._id).then(accepted => {
               if (accepted) {
+                wipeLastPrompt();
                 setCurrentModel(model);
               }
             });

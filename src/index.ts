@@ -28,7 +28,8 @@ import { StatusBarWidget } from './StatusBarWidget';
 import {
   lastPrompt,
   QiskitCompletionProvider,
-  QiskitInlineCompletionProvider
+  QiskitInlineCompletionProvider,
+  wipeLastPrompt
 } from './QiskitCompletionProvider';
 import { postServiceUrl } from './service/api';
 import { getFeedbackStatusBarWidget, getFeedback } from './service/feedback';
@@ -73,10 +74,21 @@ const plugin: JupyterFrontEndPlugin<void> = {
     const settings = await settingRegistry.load(plugin.id);
     console.debug(EXTENSION_ID + ' settings loaded:', settings.composite);
 
-    postServiceUrl(settings.composite['serviceUrl'] as string);
+    let is_openai = false;
+
+    postServiceUrl(settings.composite['serviceUrl'] as string).then(
+      response => {
+        is_openai = response.is_openai;
+        wipeLastPrompt();
+      }
+    );
     settings.changed.connect(() =>
-      postServiceUrl(settings.composite['serviceUrl'] as string).then(() =>
-        refreshModelsList()
+      postServiceUrl(settings.composite['serviceUrl'] as string).then(
+        response => {
+          is_openai = response.is_openai;
+          wipeLastPrompt();
+          refreshModelsList();
+        }
       )
     );
 
@@ -87,7 +99,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     statusBar.registerStatusItem(EXTENSION_ID + ':feedback', {
       item: getFeedbackStatusBarWidget(),
-      align: 'left'
+      align: 'left',
+      isActive: () => !is_openai
     });
 
     const statusBarWidget = new StatusBarWidget();
@@ -104,11 +117,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
       label: 'Give feedback for the Qiskit Code Assistant',
       icon: feedbackIcon,
       execute: () => getFeedback(),
-      isEnabled: () => lastPrompt !== undefined,
+      isEnabled: () => !is_openai && lastPrompt !== undefined,
       isVisible: () =>
+        !is_openai &&
         ['code', 'markdown'].includes(
           notebookTracker.activeCell?.model.type || ''
-        ) && lastPrompt !== undefined
+        ) &&
+        lastPrompt !== undefined
     });
 
     app.commands.addCommand(CommandIDs.updateApiToken, {
