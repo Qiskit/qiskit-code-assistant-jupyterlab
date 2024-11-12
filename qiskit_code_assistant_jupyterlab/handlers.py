@@ -88,7 +88,10 @@ def convert_openai(model):
 class ServiceUrlHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        self.finish(json.dumps({"url": runtime_configs["service_url"]}))
+        self.finish(json.dumps({
+            "url": runtime_configs["service_url"],
+            "is_openai": runtime_configs["is_openai"]
+            }))
 
     @tornado.web.authenticated
     def post(self):
@@ -102,7 +105,10 @@ class ServiceUrlHandler(APIHandler):
         except (requests.exceptions.JSONDecodeError, KeyError):
             runtime_configs["is_openai"] = True
         finally:
-            self.finish(json.dumps({"url": runtime_configs["service_url"]}))
+            self.finish(json.dumps({
+                "url": runtime_configs["service_url"],
+                "is_openai": runtime_configs["is_openai"]
+                }))
 
 
 class TokenHandler(APIHandler):
@@ -282,7 +288,7 @@ class FeedbackHandler(APIHandler):
     @tornado.web.authenticated
     def post(self):
         if runtime_configs["is_openai"]:
-            self.finish(json.dumps({"success": "true"}))
+            self.finish(json.dumps({"message": "Feedback not supported for this service"}))
         else:
             url = url_path_join(runtime_configs["service_url"], "feedback")
 

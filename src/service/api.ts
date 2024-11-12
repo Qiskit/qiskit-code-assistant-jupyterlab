@@ -22,7 +22,8 @@ import {
   IModelDisclaimer,
   IModelInfo,
   IModelPromptResponse,
-  IResponseMessage
+  IResponseMessage,
+  IServiceResponse
 } from '../utils/schema';
 
 const AUTH_ERROR_CODES = [401, 403, 422];
@@ -40,14 +41,17 @@ async function notifyInvalid(response: Response): Promise<void> {
 }
 
 // POST /service
-export async function postServiceUrl(newUrl: string): Promise<void> {
+export async function postServiceUrl(
+  newUrl: string
+): Promise<IServiceResponse> {
   return await requestAPI('service', {
     method: 'POST',
     body: JSON.stringify({ url: newUrl })
   }).then(response => {
     if (response.ok) {
-      response.json().then(json => {
+      return response.json().then(json => {
         console.debug('Updated service URL:', json.url);
+        return json;
       });
     } else {
       console.error(

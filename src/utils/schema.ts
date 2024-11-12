@@ -97,3 +97,8 @@ export interface IFeedbackForm {
   input?: string;
   output?: string;
 }
+
+export interface IServiceResponse {
+  url: string;
+  is_openai: boolean;
+}
