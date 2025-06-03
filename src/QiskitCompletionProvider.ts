@@ -82,6 +82,10 @@ export class QiskitCompletionProvider implements ICompletionProvider {
     this.app = options.app;
   }
 
+  get timeout(): number {
+    return (this.settings.composite['providerTimeout'] as number) || 15000;
+  }
+
   async fetch(
     request: CompletionHandler.IRequest,
     context: ICompletionContext
@@ -131,16 +135,25 @@ export class QiskitInlineCompletionProvider
   readonly name: string = 'Qiskit Code Assistant';
 
   app: JupyterFrontEnd;
+  settings: ISettingRegistry.ISettings;
   prompt_id: string = '';
-  schema: ISettingRegistry.IProperty = {
-    default: {
-      enabled: true,
-      timeout: 10000
-    }
-  };
 
-  constructor(options: { app: JupyterFrontEnd }) {
+  constructor(options: {
+    app: JupyterFrontEnd;
+    settings: ISettingRegistry.ISettings;
+  }) {
     this.app = options.app;
+    this.settings = options.settings;
+  }
+
+  get schema(): ISettingRegistry.IProperty {
+    return {
+      default: {
+        enabled: true,
+        timeout:
+          (this.settings.composite['inlineProviderTimeout'] as number) || 15000
+      }
+    };
   }
 
   async fetch(

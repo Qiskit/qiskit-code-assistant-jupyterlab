@@ -41,6 +41,22 @@
       "description": "Send telemetry to the Qiskit Code Assistant Service",
       "type": "boolean",
       "default": true
+    },
+    "providerTimeout": {
+      "title": "Provider Timeout (milliseconds)",
+      "description": "Timeout for completion provider requests in milliseconds. Recommended value is 15000 (15 seconds) for Qiskit Code Assistant API.",
+      "type": "number",
+      "default": 15000,
+      "minimum": 1000,
+      "maximum": 30000
+    },
+    "inlineProviderTimeout": {
+      "title": "Inline Provider Timeout (milliseconds)",
+      "description": "Timeout for inline completion provider requests in milliseconds.",
+      "type": "number",
+      "default": 15000,
+      "minimum": 1000,
+      "maximum": 30000
     }
   },
   "additionalProperties": false
