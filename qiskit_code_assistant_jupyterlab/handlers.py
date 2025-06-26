@@ -56,6 +56,9 @@ def init_token():
         token = config.get("qiskit-code-assistant", {}).get("token")
 
         if not token:
+            token = config.get("default-ibm-quantum-platform", {}).get("token", "")
+
+        if not token:
             token = config.get("default-ibm-quantum", {}).get("token", "")
 
     runtime_configs["api_token"] = token

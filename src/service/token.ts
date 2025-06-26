@@ -28,7 +28,7 @@ export async function checkAPIToken(): Promise<void> {
 
 export async function updateAPIToken(): Promise<void> {
   await InputDialog.getPassword({
-    title: 'Enter your API token from quantum.ibm.com',
+    title: 'Enter your API token from quantum.cloud.ibm.com',
     label:
       'In order to use Qiskit Code Assistant you need a IBM Quantum API Token'
   })
