@@ -37,8 +37,8 @@ To make calls to the service API the extension requires an IBM Quantum API token
 
 #### Getting your API token
 
-Open the [IBM Quantum website](https://quantum.ibm.com/) in your browser and login with
-your IBM Quantum account.
+Open the [IBM Quantum website](https://quantum.cloud.ibm.com/) in your browser and login with
+your IBM Quantum Cloud account.
 After logging in, an API token is displayed on the upper right side of the webpage.
 
 ![IBM Quantum API Key](docs/images/api-key.png)
