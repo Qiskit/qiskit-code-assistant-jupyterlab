@@ -135,7 +135,7 @@ export class QiskitInlineCompletionProvider
   schema: ISettingRegistry.IProperty = {
     default: {
       enabled: true,
-      timeout: 10000
+      timeout: 15000
     }
   };
 

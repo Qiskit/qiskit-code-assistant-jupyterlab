@@ -107,10 +107,10 @@ There are a few settings we recommend to edit in your user settings.
 1. Inline Completer `showWidget` can be set to `always` in order to always show the
    inline completer widget to cycle through and select a completion item
 
-2. Code Completion `providerTimeout` can be increased, our suggested value is `10000` or
-   10 seconds. This is 1 second by default and the Qiskit Code Assistant API rarely returns
+2. Code Completion `providerTimeout` can be increased, our suggested value is `15000` or
+   15 seconds. This is 1 second by default and the Qiskit Code Assistant API rarely returns
    within 1 second. This setting only apply the the standard completer that is invoked with
-   `Tab`, the inline completer has a default of 10 seconds.
+   `Tab`, the inline completer has a default of 15 seconds.
 
 3. If you want to change the instance of the Qiskit Code Assistant Service that the
    extension should use you can edit the Qiskit Code Assistant setting `serviceUrl`.
