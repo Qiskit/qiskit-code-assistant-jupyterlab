@@ -165,12 +165,12 @@ export class QiskitInlineCompletionProvider
     const text = getInputText(request.text, context.widget);
 
     if (streamingEnabled) {
-      const results = await autoCompleteStreaming(text);
+      const results = autoCompleteStreaming(text);
 
       const streamToken = `qiskit-code-assitant_${new Date().toISOString()}`;
       this._streamPromises.set(streamToken, results);
 
-      return {
+      return Promise.resolve({
         items: [
           {
             insertText: '',
@@ -178,20 +178,21 @@ export class QiskitInlineCompletionProvider
             token: streamToken
           }
         ]
-      };
+      });
     } else {
-      const results = await autoComplete(text);
-      this.prompt_id = results.prompt_id;
-      if (this.prompt_id) {
-        lastPrompt = results;
-        this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
-      }
+      return autoComplete(text).then(results => {
+        this.prompt_id = results.prompt_id;
+        if (this.prompt_id) {
+          lastPrompt = results;
+          this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
+        }
 
-      return {
-        items: results.items.map((item: string): IInlineCompletionItem => {
-          return { insertText: item };
-        })
-      };
+        return {
+          items: results.items.map((item: string): IInlineCompletionItem => {
+            return { insertText: item };
+          })
+        };
+      });
     }
   }
 
