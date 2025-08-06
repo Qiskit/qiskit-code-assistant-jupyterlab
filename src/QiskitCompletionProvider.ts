@@ -159,22 +159,28 @@ export class QiskitInlineCompletionProvider
       return { items: [] };
     }
 
-    const streamingEnabled = this.settings.composite['enableStreaming'] as boolean;
+    const streamingEnabled = this.settings.composite[
+      'enableStreaming'
+    ] as boolean;
     const text = getInputText(request.text, context.widget);
 
     if (streamingEnabled) {
-      const results = await autoCompleteStreaming(text)
+      const results = await autoCompleteStreaming(text);
 
-      const streamToken = `qiskit-code-assitant_${(new Date()).toISOString()}`
+      const streamToken = `qiskit-code-assitant_${new Date().toISOString()}`;
       this._streamPromises.set(streamToken, results);
 
-      return { items: [{
-        insertText: '',
-        isIncomplete: true, // trigger the call to `stream()` for data
-        token: streamToken
-      }]};
+      return {
+        items: [
+          {
+            insertText: '',
+            isIncomplete: true, // trigger the call to `stream()` for data
+            token: streamToken
+          }
+        ]
+      };
     } else {
-      const results = await autoComplete(text)
+      const results = await autoComplete(text);
       this.prompt_id = results.prompt_id;
       if (this.prompt_id) {
         lastPrompt = results;
@@ -189,24 +195,23 @@ export class QiskitInlineCompletionProvider
     }
   }
 
-
   /**
    * handle streaming prompt response
-   * @param token 
+   * @param token
    */
   async *stream(token: string) {
     const results = this._streamPromises.get(token);
     if (!results) return;
 
-    let text = ''
+    let text = '';
     let lastChunk: ICompletionReturn | undefined = undefined;
     for await (let chunk of results) {
       lastChunk = chunk as ICompletionReturn;
-      text += lastChunk.items[0]
-      yield { response: { insertText: text } }
+      text += lastChunk.items[0];
+      yield { response: { insertText: text } };
     }
 
-    this._streamPromises.delete(token)
+    this._streamPromises.delete(token);
 
     if (lastChunk) {
       this.prompt_id = lastChunk.prompt_id;

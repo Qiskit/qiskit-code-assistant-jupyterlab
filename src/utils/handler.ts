@@ -50,7 +50,6 @@ export async function requestAPI(
   return response;
 }
 
-
 /**
  * Call the API extension using streaming
  *
@@ -58,7 +57,7 @@ export async function requestAPI(
  * @param init Initial values for the requestd
  * @returns The response body interpreted as JSON
  */
-export async function *requestAPIStreaming(
+export async function* requestAPIStreaming(
   endPoint: string = '',
   init: RequestInit = {}
 ): AsyncGenerator<string> {
@@ -75,8 +74,13 @@ export async function *requestAPIStreaming(
     response = await ServerConnection.makeRequest(requestUrl, init, settings);
 
     if (!response.body) {
-      console.error('The qiskit_code_assistant_jupyterlab server extension request returned no body.');
-      throw new ServerConnection.ResponseError(response, 'Fetch failed. No response body returned.')
+      console.error(
+        'The qiskit_code_assistant_jupyterlab server extension request returned no body.'
+      );
+      throw new ServerConnection.ResponseError(
+        response,
+        'Fetch failed. No response body returned.'
+      );
     }
 
     // Stream the response
@@ -85,7 +89,7 @@ export async function *requestAPIStreaming(
       const { done, value } = await reader.read();
       if (done) break;
       // decode chunk and yield it
-      yield (new TextDecoder().decode(value));
+      yield new TextDecoder().decode(value);
     }
   } catch (error) {
     console.error(

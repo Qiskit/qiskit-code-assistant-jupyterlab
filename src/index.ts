@@ -93,7 +93,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
     );
 
     const provider = new QiskitCompletionProvider({ settings, app });
-    const inlineProvider = new QiskitInlineCompletionProvider({ settings, app });
+    const inlineProvider = new QiskitInlineCompletionProvider({
+      settings,
+      app
+    });
     completionProviderManager.registerProvider(provider);
     completionProviderManager.registerInlineProvider(inlineProvider);
 

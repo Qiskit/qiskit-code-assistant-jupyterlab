@@ -23,9 +23,8 @@ import { ICompletionReturn, IModelPromptResponse } from '../utils/schema';
 
 export const CHAR_LIMIT = 4_000;
 
-
 function getGeneratedText(json: any): string {
-  return json?.generated_text ?? json?.results[0].generated_text ?? "";
+  return json?.generated_text ?? json?.results[0].generated_text ?? '';
 }
 
 async function promptPromise(
@@ -48,7 +47,7 @@ async function promptPromise(
   );
 }
 
-async function *promptPromiseStreaming(
+async function* promptPromiseStreaming(
   model: string,
   requestText: string
 ): AsyncGenerator<ICompletionReturn> {
@@ -58,13 +57,13 @@ async function *promptPromiseStreaming(
   const responseData = postModelPromptStreaming(model, requestText);
 
   for await (let chunk of responseData) {
-      const item: ICompletionReturn = {
-        items: [getGeneratedText(chunk)],
-        prompt_id: chunk.prompt_id,
-        input: requestText
-      };
+    const item: ICompletionReturn = {
+      items: [getGeneratedText(chunk)],
+      prompt_id: chunk.prompt_id,
+      input: requestText
+    };
 
-      yield item;
+    yield item;
   }
 }
 
@@ -107,7 +106,9 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
     });
 }
 
-export async function *autoCompleteStreaming(text: string): AsyncGenerator<ICompletionReturn> {
+export async function* autoCompleteStreaming(
+  text: string
+): AsyncGenerator<ICompletionReturn> {
   const emptyReturn: ICompletionReturn = {
     items: [],
     prompt_id: '',
@@ -115,7 +116,7 @@ export async function *autoCompleteStreaming(text: string): AsyncGenerator<IComp
   };
 
   try {
-    await checkAPIToken()
+    await checkAPIToken();
 
     const startingOffset = Math.max(0, text.length - CHAR_LIMIT);
     const requestText = text.slice(startingOffset, text.length);
@@ -131,7 +132,7 @@ export async function *autoCompleteStreaming(text: string): AsyncGenerator<IComp
         yield chunk;
       }
     } else {
-      const accepted = await showDisclaimer(model._id)
+      const accepted = await showDisclaimer(model._id);
       if (accepted) {
         const response = await promptPromiseStreaming(model._id, requestText);
 
@@ -143,7 +144,7 @@ export async function *autoCompleteStreaming(text: string): AsyncGenerator<IComp
         yield emptyReturn;
       }
     }
-  } catch(e) {
+  } catch (e) {
     console.error('Failed to send prompt', e);
     return emptyReturn;
   } finally {
