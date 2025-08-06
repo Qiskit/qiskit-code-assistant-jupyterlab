@@ -230,7 +230,13 @@ class DisclaimerAcceptanceHandler(APIHandler):
 
 class PromptHandler(APIHandler):
     @tornado.web.authenticated
+    @tornado.gen.coroutine
     def post(self, id):
+        request_body = self.get_json_body()
+        def _on_chunk(chunk):
+            self.write(chunk)
+            self.flush()
+
         if runtime_configs["is_openai"]:
             url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "completions")
             result = {}
@@ -259,14 +265,31 @@ class PromptHandler(APIHandler):
         else:
             url = url_path_join(runtime_configs["service_url"], "model", id, "prompt")
 
-            try:
-                r = requests.post(url, headers=get_header(), json=self.get_json_body())
-                r.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                self.set_status(err.response.status_code)
-                self.finish(json.dumps(err.response.json()))
+            if request_body.get('stream', False):
+                try:
+                    client = tornado.httpclient.AsyncHTTPClient()
+                    request = tornado.httpclient.HTTPRequest(
+                        url,
+                        method='POST',
+                        headers=get_header(),
+                        body=json.dumps(request_body),
+                        streaming_callback=_on_chunk
+                    )
+                    response = yield client.fetch(request, raise_error=True)
+                except requests.exceptions.HTTPError as err:
+                    self.set_status(err.response.status_code)
+                    self.finish(json.dumps(err.response.json()))
+                else:
+                    self.finish()
             else:
-                self.finish(json.dumps(r.json()))
+                try:
+                    r = requests.post(url, headers=get_header(), json=self.get_json_body())
+                    r.raise_for_status()
+                except requests.exceptions.HTTPError as err:
+                    self.set_status(err.response.status_code)
+                    self.finish(json.dumps(err.response.json()))
+                else:
+                    self.finish(json.dumps(r.json()))
 
 
 class PromptAcceptanceHandler(APIHandler):

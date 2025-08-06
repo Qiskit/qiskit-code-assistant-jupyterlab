@@ -16,7 +16,7 @@
 
 import { Notification } from '@jupyterlab/apputils';
 
-import { requestAPI } from '../utils/handler';
+import { requestAPI, requestAPIStreaming } from '../utils/handler';
 import {
   IFeedbackResponse,
   IModelDisclaimer,
@@ -27,6 +27,7 @@ import {
 } from '../utils/schema';
 
 const AUTH_ERROR_CODES = [401, 403, 422];
+const STREAM_DATA_PREFIX = "data: ";
 
 async function notifyInvalid(response: Response): Promise<void> {
   if (AUTH_ERROR_CODES.includes(response.status)) {
@@ -211,6 +212,35 @@ export async function postModelPrompt(
       throw Error(response.statusText);
     }
   });
+}
+
+// POST /model/{model_id}/prompt
+export async function *postModelPromptStreaming(
+  model_id: string,
+  input: string
+): AsyncGenerator<IModelPromptResponse> {
+  const response = await requestAPIStreaming(`model/${model_id}/prompt`, {
+    method: 'POST',
+    body: JSON.stringify({ input, stream: true })
+  });
+
+  for await (let chunk of response) {
+    // parse & transform the streaming data chunk
+    const lines = chunk.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith(STREAM_DATA_PREFIX)) {
+        try {
+          // remove 'data: ' prefix and parse remaining string
+          const data = JSON.parse(line.substring(STREAM_DATA_PREFIX.length));
+          yield data;
+        } catch (error) {
+          // JSON parsing errors
+          console.error(`Error parsing JSON: ${error}`);
+        }
+      }
+    }
+  }
 }
 
 // POST /prompt/{prompt_id}/acceptance

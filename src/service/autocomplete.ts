@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { postModelPrompt } from './api';
+import { postModelPrompt, postModelPromptStreaming } from './api';
 import { showDisclaimer } from './disclaimer';
 import { getCurrentModel } from './modelHandler';
 import { checkAPIToken } from './token';
@@ -22,6 +22,11 @@ import { StatusBarWidget } from '../StatusBarWidget';
 import { ICompletionReturn, IModelPromptResponse } from '../utils/schema';
 
 export const CHAR_LIMIT = 4_000;
+
+
+function getGeneratedText(json: any): string {
+  return json?.generated_text ?? json?.results[0].generated_text ?? "";
+}
 
 async function promptPromise(
   model: string,
@@ -41,6 +46,26 @@ async function promptPromise(
       };
     }
   );
+}
+
+async function *promptPromiseStreaming(
+  model: string,
+  requestText: string
+): AsyncGenerator<ICompletionReturn> {
+  // Show loading icon in status bar
+  StatusBarWidget.widget.setLoadingStatus();
+
+  const responseData = postModelPromptStreaming(model, requestText);
+
+  for await (let chunk of responseData) {
+      const item: ICompletionReturn = {
+        items: [getGeneratedText(chunk)],
+        prompt_id: chunk.prompt_id,
+        input: requestText
+      };
+
+      yield item;
+  }
 }
 
 export async function autoComplete(text: string): Promise<ICompletionReturn> {
@@ -80,4 +105,49 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
       // Remove loading icon from status bar
       StatusBarWidget.widget.refreshStatusBar();
     });
+}
+
+export async function *autoCompleteStreaming(text: string): AsyncGenerator<ICompletionReturn> {
+  const emptyReturn: ICompletionReturn = {
+    items: [],
+    prompt_id: '',
+    input: ''
+  };
+
+  try {
+    await checkAPIToken()
+
+    const startingOffset = Math.max(0, text.length - CHAR_LIMIT);
+    const requestText = text.slice(startingOffset, text.length);
+    const model = getCurrentModel();
+
+    if (model === undefined) {
+      console.error('Failed to send prompt', 'No model selected');
+      yield emptyReturn;
+    } else if (model.disclaimer?.accepted) {
+      const response = await promptPromiseStreaming(model._id, requestText);
+
+      for await (let chunk of response) {
+        yield chunk;
+      }
+    } else {
+      const accepted = await showDisclaimer(model._id)
+      if (accepted) {
+        const response = await promptPromiseStreaming(model._id, requestText);
+
+        for await (let chunk of response) {
+          yield chunk;
+        }
+      } else {
+        console.error('Disclaimer not accepted');
+        yield emptyReturn;
+      }
+    }
+  } catch(e) {
+    console.error('Failed to send prompt', e);
+    return emptyReturn;
+  } finally {
+    // Remove loading icon from status bar
+    StatusBarWidget.widget.refreshStatusBar();
+  }
 }

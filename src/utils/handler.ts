@@ -49,3 +49,49 @@ export async function requestAPI(
 
   return response;
 }
+
+
+/**
+ * Call the API extension using streaming
+ *
+ * @param endPoint API REST end point for the extension
+ * @param init Initial values for the requestd
+ * @returns The response body interpreted as JSON
+ */
+export async function *requestAPIStreaming(
+  endPoint: string = '',
+  init: RequestInit = {}
+): AsyncGenerator<string> {
+  // Handle streaming request to Jupyter API
+  const settings = ServerConnection.makeSettings();
+  const requestUrl = URLExt.join(
+    settings.baseUrl,
+    'qiskit-code-assistant', // API Namespace
+    endPoint
+  );
+
+  let response: Response;
+  try {
+    response = await ServerConnection.makeRequest(requestUrl, init, settings);
+
+    if (!response.body) {
+      console.error('The qiskit_code_assistant_jupyterlab server extension request returned no body.');
+      throw new ServerConnection.ResponseError(response, 'Fetch failed. No response body returned.')
+    }
+
+    // Stream the response
+    const reader = response.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      // decode chunk and yield it
+      yield (new TextDecoder().decode(value));
+    }
+  } catch (error) {
+    console.error(
+      'The qiskit_code_assistant_jupyterlab server extension appears to be missing.\n',
+      error
+    );
+    throw new ServerConnection.NetworkError(error as any);
+  }
+}
