@@ -87,7 +87,9 @@ export async function* requestAPIStreaming(
     const reader = response.body.getReader();
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        break;
+      }
       // decode chunk and yield it
       yield new TextDecoder().decode(value);
     }

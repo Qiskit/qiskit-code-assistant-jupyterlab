@@ -56,7 +56,7 @@ async function* promptPromiseStreaming(
 
   const responseData = postModelPromptStreaming(model, requestText);
 
-  for await (let chunk of responseData) {
+  for await (const chunk of responseData) {
     const item: ICompletionReturn = {
       items: [getGeneratedText(chunk)],
       prompt_id: chunk.prompt_id,
@@ -128,7 +128,7 @@ export async function* autoCompleteStreaming(
     } else if (model.disclaimer?.accepted) {
       const response = await promptPromiseStreaming(model._id, requestText);
 
-      for await (let chunk of response) {
+      for await (const chunk of response) {
         yield chunk;
       }
     } else {
@@ -136,7 +136,7 @@ export async function* autoCompleteStreaming(
       if (accepted) {
         const response = await promptPromiseStreaming(model._id, requestText);
 
-        for await (let chunk of response) {
+        for await (const chunk of response) {
           yield chunk;
         }
       } else {

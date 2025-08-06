@@ -224,7 +224,7 @@ export async function* postModelPromptStreaming(
     body: JSON.stringify({ input, stream: true })
   });
 
-  for await (let chunk of response) {
+  for await (const chunk of response) {
     // parse & transform the streaming data chunk
     const lines = chunk.split('\n');
     for (let i = 0; i < lines.length; i++) {

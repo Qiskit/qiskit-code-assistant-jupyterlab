@@ -201,11 +201,13 @@ export class QiskitInlineCompletionProvider
    */
   async *stream(token: string) {
     const results = this._streamPromises.get(token);
-    if (!results) return;
+    if (!results) {
+      return;
+    }
 
     let text = '';
     let lastChunk: ICompletionReturn | undefined = undefined;
-    for await (let chunk of results) {
+    for await (const chunk of results) {
       lastChunk = chunk as ICompletionReturn;
       text += lastChunk.items[0];
       yield { response: { insertText: text } };
