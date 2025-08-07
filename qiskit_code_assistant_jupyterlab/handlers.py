@@ -242,7 +242,8 @@ class PromptHandler(APIHandler):
             url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "completions")
             request_body = {
                 "model": id,
-                "prompt": request_body["input"]
+                "prompt": request_body["input"],
+                "stream": is_stream
             }
         else:
             url = url_path_join(runtime_configs["service_url"], "model", id, "prompt")
@@ -260,8 +261,8 @@ class PromptHandler(APIHandler):
             if is_stream:
                 yield make_streaming_request(url, json.dumps(request_body), _on_chunk)
             else:
-                parsed_chunk = make_non_streaming_request(url, request_body)
-                result = to_model_prompt_response(parsed_chunk) if is_openai else parsed_chunk
+                non_streaming_response = make_non_streaming_request(url, request_body)
+                result = to_model_prompt_response(non_streaming_response) if is_openai else non_streaming_response
         except requests.exceptions.HTTPError as err:
             self.set_status(err.response.status_code)
             self.finish(json.dumps(err.response.json()))
