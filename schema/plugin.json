@@ -41,6 +41,12 @@
       "description": "Send telemetry to the Qiskit Code Assistant Service",
       "type": "boolean",
       "default": true
+    },
+    "enableStreaming": {
+      "title": "Enable Streaming",
+      "description": "Stream response from the Qiskit Code Assistant Service",
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false

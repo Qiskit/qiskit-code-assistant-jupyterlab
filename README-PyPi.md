@@ -126,6 +126,8 @@ There are a few settings we recommend to edit in your user settings.
    > **NOTE**: The telemetry does not collect your code nor the suggested code completions.
    > What is collected is whether a code suggestion was accepted or dismissed.
 
+6. Response streaming can be enabled by checking the `enableStreaming` setting.
+
 ## Terms of use
 
 - [End User License Agreement (EULA)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/blob/main/docs/EULA.md) acceptance required before starting to use the model acceptance required before starting to use the model

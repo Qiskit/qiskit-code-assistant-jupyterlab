@@ -18,6 +18,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Callable
 
 import requests
 import tornado
@@ -26,6 +27,7 @@ from jupyter_server.utils import url_path_join
 from qiskit_ibm_runtime import QiskitRuntimeService
 
 OPENAI_VERSION = "v1"
+STREAM_DATA_PREFIX = "data: "
 
 runtime_configs = {
     "service_url": "http://localhost",
@@ -230,43 +232,45 @@ class DisclaimerAcceptanceHandler(APIHandler):
 
 class PromptHandler(APIHandler):
     @tornado.web.authenticated
+    @tornado.gen.coroutine
     def post(self, id):
-        if runtime_configs["is_openai"]:
-            url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "completions")
-            result = {}
-            try:
-                r = requests.post(url,
-                                  headers=get_header(),
-                                  json={
-                                      "model": id,
-                                      "prompt": self.get_json_body()["input"]
-                                  })
-                r.raise_for_status()
+        request_body = self.get_json_body()
+        is_stream = request_body.get("stream", False)
+        is_openai = runtime_configs.get("is_openai", False)
 
-                if r.ok:
-                    response = r.json()
-                    result = {
-                        "results": list(map(lambda c: {"generated_text": c["text"]},
-                                            response["choices"])),
-                        "prompt_id": response["id"],
-                        "created_at": datetime.fromtimestamp(int(response["created"])).isoformat()
-                    }
-            except requests.exceptions.HTTPError as err:
-                self.set_status(err.response.status_code)
-                self.finish(json.dumps(err.response.json()))
-            else:
-                self.finish(json.dumps(result))
+        if is_openai:
+            url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "completions")
+            request_body = {
+                "model": id,
+                "prompt": request_body["input"],
+                "stream": is_stream
+            }
         else:
             url = url_path_join(runtime_configs["service_url"], "model", id, "prompt")
 
-            try:
-                r = requests.post(url, headers=get_header(), json=self.get_json_body())
-                r.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                self.set_status(err.response.status_code)
-                self.finish(json.dumps(err.response.json()))
+        def _on_chunk(chunk: bytes):
+            if is_openai:
+                parsed_chunk = parse_streaming_chunk(chunk)
+                response = to_model_prompt_response(parsed_chunk)
+                self.write(STREAM_DATA_PREFIX + json.dumps(response))
             else:
-                self.finish(json.dumps(r.json()))
+                self.write(chunk)
+            self.flush()
+
+        try:
+            if is_stream:
+                yield make_streaming_request(url, json.dumps(request_body), _on_chunk)
+            else:
+                non_streaming_response = make_non_streaming_request(url, request_body)
+                result = to_model_prompt_response(non_streaming_response) if is_openai else non_streaming_response
+        except requests.exceptions.HTTPError as err:
+            self.set_status(err.response.status_code)
+            self.finish(json.dumps(err.response.json()))
+        else:
+            if is_stream:
+                self.finish()
+            else:
+                self.finish(json.dumps(result))
 
 
 class PromptAcceptanceHandler(APIHandler):
@@ -323,3 +327,46 @@ def setup_handlers(web_app):
     ]
     web_app.add_handlers(host_pattern, handlers)
     init_token()
+
+
+def make_non_streaming_request(url: str, json_body: dict, method: str = "POST"):
+    r = requests.request(
+        method,
+        url,
+        headers=get_header(),
+        json=json_body
+    )
+    r.raise_for_status()
+
+    if r.ok:
+        return r.json()
+    return {}
+
+
+def make_streaming_request(
+    url: str, request_body: str, streaming_callback: Callable, method: str = "POST"
+) -> tornado.concurrent.Future:
+    client = tornado.httpclient.AsyncHTTPClient()
+    request = tornado.httpclient.HTTPRequest(
+        url,
+        method=method,
+        headers=get_header(),
+        body=request_body,
+        streaming_callback=streaming_callback
+    )
+    return client.fetch(request, raise_error=True)
+
+
+def to_model_prompt_response(response: dict) -> dict:
+    return {
+        "results": list(map(lambda c: {"generated_text": c["text"]}, response["choices"])),
+        "prompt_id": response["id"],
+        "created_at": datetime.fromtimestamp(int(response["created"])).isoformat()
+    } if response else {}
+
+
+def parse_streaming_chunk(chunk: bytes) -> dict:
+    chunk_str = chunk.decode("utf-8")
+    if chunk_str.startswith(STREAM_DATA_PREFIX):
+        data = json.loads(chunk_str[len(STREAM_DATA_PREFIX):])
+        return data

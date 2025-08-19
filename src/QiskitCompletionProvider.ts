@@ -31,7 +31,7 @@ import { LabIcon } from '@jupyterlab/ui-components';
 import { Widget } from '@lumino/widgets';
 
 import { postModelPromptAccept } from './service/api';
-import { autoComplete } from './service/autocomplete';
+import { autoComplete, autoCompleteStreaming } from './service/autocomplete';
 import { qiskitIcon } from './utils/icons';
 import { ICompletionReturn } from './utils/schema';
 
@@ -130,6 +130,7 @@ export class QiskitInlineCompletionProvider
   readonly identifier: string = 'qiskit-code-assistant-inline-completer';
   readonly name: string = 'Qiskit Code Assistant';
 
+  settings: ISettingRegistry.ISettings;
   app: JupyterFrontEnd;
   prompt_id: string = '';
   schema: ISettingRegistry.IProperty = {
@@ -139,7 +140,13 @@ export class QiskitInlineCompletionProvider
     }
   };
 
-  constructor(options: { app: JupyterFrontEnd }) {
+  _streamPromises: Map<string, AsyncGenerator> = new Map();
+
+  constructor(options: {
+    settings: ISettingRegistry.ISettings;
+    app: JupyterFrontEnd;
+  }) {
+    this.settings = options.settings;
     this.app = options.app;
   }
 
@@ -152,21 +159,70 @@ export class QiskitInlineCompletionProvider
       return { items: [] };
     }
 
+    const streamingEnabled = this.settings.composite[
+      'enableStreaming'
+    ] as boolean;
     const text = getInputText(request.text, context.widget);
 
-    return autoComplete(text).then(results => {
-      this.prompt_id = results.prompt_id;
+    if (streamingEnabled) {
+      const results = autoCompleteStreaming(text);
+
+      const streamToken = `qiskit-code-assitant_${new Date().toISOString()}`;
+      this._streamPromises.set(streamToken, results);
+
+      return Promise.resolve({
+        items: [
+          {
+            insertText: '',
+            isIncomplete: true, // trigger the call to `stream()` for data
+            token: streamToken
+          }
+        ]
+      });
+    } else {
+      return autoComplete(text).then(results => {
+        this.prompt_id = results.prompt_id;
+        if (this.prompt_id) {
+          lastPrompt = results;
+          this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
+        }
+
+        return {
+          items: results.items.map((item: string): IInlineCompletionItem => {
+            return { insertText: item };
+          })
+        };
+      });
+    }
+  }
+
+  /**
+   * handle streaming prompt response
+   * @param token
+   */
+  async *stream(token: string) {
+    const results = this._streamPromises.get(token);
+    if (!results) {
+      return;
+    }
+
+    let text = '';
+    let lastChunk: ICompletionReturn | undefined = undefined;
+    for await (const chunk of results) {
+      lastChunk = chunk as ICompletionReturn;
+      text += lastChunk.items[0];
+      yield { response: { insertText: text } };
+    }
+
+    this._streamPromises.delete(token);
+
+    if (lastChunk) {
+      this.prompt_id = lastChunk.prompt_id;
       if (this.prompt_id) {
-        lastPrompt = results;
+        lastPrompt = lastChunk;
         this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
       }
-
-      return {
-        items: results.items.map((item: string): IInlineCompletionItem => {
-          return { insertText: item };
-        })
-      };
-    });
+    }
   }
 
   async isApplicable(context: ICompletionContext): Promise<boolean> {

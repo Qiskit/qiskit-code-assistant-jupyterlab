@@ -124,6 +124,8 @@ There are a few settings we recommend to edit in your user settings.
    > **NOTE**: The telemetry does not collect your code nor the suggested code completions.
    > What is collected is whether a code suggestion was accepted or dismissed.
 
+6. Response streaming can be enabled by checking the `enableStreaming` setting.
+
 ## Troubleshooting
 
 If you are seeing the frontend extension, but it is not working, check that the server
