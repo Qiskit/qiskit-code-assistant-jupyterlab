@@ -249,13 +249,25 @@ class PromptHandler(APIHandler):
             url = url_path_join(runtime_configs["service_url"], "model", id, "prompt")
 
         def _on_chunk(chunk: bytes):
-            if is_openai:
-                parsed_chunk = parse_streaming_chunk(chunk)
-                response = to_model_prompt_response(parsed_chunk)
-                self.write(STREAM_DATA_PREFIX + json.dumps(response))
-            else:
-                self.write(chunk)
-            self.flush()
+            try:
+                if is_openai:
+                    parsed_chunk = parse_streaming_chunk(chunk)
+                    if parsed_chunk:  # Check for valid parsed chunk
+                        response = to_model_prompt_response(parsed_chunk)
+                        self.write(STREAM_DATA_PREFIX + json.dumps(response) + "\n")
+                    else:
+                        # Skip empty or invalid chunks
+                        return
+                else:
+                    self.write(chunk)
+                self.flush()
+            except Exception as e:
+                # Log error but continue streaming
+                print(f"Error processing chunk: {e}")
+                # Optionally send error to client
+                error_msg = {"error": str(e), "type": "chunk_processing_error"}
+                self.write(STREAM_DATA_PREFIX + json.dumps(error_msg) + "\n")
+                self.flush()
 
         try:
             if is_stream:
@@ -265,7 +277,15 @@ class PromptHandler(APIHandler):
                 result = to_model_prompt_response(non_streaming_response) if is_openai else non_streaming_response
         except requests.exceptions.HTTPError as err:
             self.set_status(err.response.status_code)
-            self.finish(json.dumps(err.response.json()))
+            try:
+                self.finish(json.dumps(err.response.json()))
+            except Exception:
+                self.finish(json.dumps({"error": "Request failed", "status": err.response.status_code}))
+        except Exception as e:
+            # Handle other errors (timeouts, connection errors, etc.)
+            print(f"Error in prompt handler: {e}")
+            self.set_status(500)
+            self.finish(json.dumps({"error": str(e), "type": "server_error"}))
         else:
             if is_stream:
                 self.finish()
@@ -352,7 +372,9 @@ def make_streaming_request(
         method=method,
         headers=get_header(),
         body=request_body,
-        streaming_callback=streaming_callback
+        streaming_callback=streaming_callback,
+        request_timeout=60.0,  # 60 second timeout for streaming requests
+        connect_timeout=10.0   # 10 second connection timeout
     )
     return client.fetch(request, raise_error=True)
 
@@ -366,7 +388,14 @@ def to_model_prompt_response(response: dict) -> dict:
 
 
 def parse_streaming_chunk(chunk: bytes) -> dict:
-    chunk_str = chunk.decode("utf-8")
-    if chunk_str.startswith(STREAM_DATA_PREFIX):
-        data = json.loads(chunk_str[len(STREAM_DATA_PREFIX):])
-        return data
+    """Parse streaming chunk with improved error handling"""
+    try:
+        chunk_str = chunk.decode("utf-8")
+        if chunk_str.startswith(STREAM_DATA_PREFIX):
+            json_str = chunk_str[len(STREAM_DATA_PREFIX):].strip()
+            if json_str:
+                data = json.loads(json_str)
+                return data
+    except (UnicodeDecodeError, json.JSONDecodeError) as e:
+        print(f"Error parsing streaming chunk: {e}")
+    return None

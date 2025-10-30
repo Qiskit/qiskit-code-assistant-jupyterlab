@@ -54,12 +54,14 @@ export async function requestAPI(
  * Call the API extension using streaming
  *
  * @param endPoint API REST end point for the extension
- * @param init Initial values for the requestd
+ * @param init Initial values for the request
+ * @param signal Optional AbortSignal for cancellation
  * @returns The response body interpreted as JSON
  */
 export async function* requestAPIStreaming(
   endPoint: string = '',
-  init: RequestInit = {}
+  init: RequestInit = {},
+  signal?: AbortSignal
 ): AsyncGenerator<string> {
   // Handle streaming request to Jupyter API
   const settings = ServerConnection.makeSettings();
@@ -69,9 +71,21 @@ export async function* requestAPIStreaming(
     endPoint
   );
 
+  // Merge provided signal with init
+  const requestInit: RequestInit = {
+    ...init,
+    signal: signal || init.signal
+  };
+
   let response: Response;
+  const decoder = new TextDecoder(); // Reuse decoder for performance
+
   try {
-    response = await ServerConnection.makeRequest(requestUrl, init, settings);
+    response = await ServerConnection.makeRequest(
+      requestUrl,
+      requestInit,
+      settings
+    );
 
     if (!response.body) {
       console.error(
@@ -85,15 +99,30 @@ export async function* requestAPIStreaming(
 
     // Stream the response
     const reader = response.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        // Decode chunk using stream mode for proper handling of multi-byte characters
+        yield decoder.decode(value, { stream: true });
       }
-      // decode chunk and yield it
-      yield new TextDecoder().decode(value);
+      // Final decode call without stream flag to flush any remaining bytes
+      const finalChunk = decoder.decode();
+      if (finalChunk) {
+        yield finalChunk;
+      }
+    } finally {
+      // Ensure reader is released even if error occurs
+      reader.releaseLock();
     }
   } catch (error) {
+    // Check if error is due to abort
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.debug('Streaming request was aborted');
+      throw error;
+    }
     console.error(
       'The qiskit_code_assistant_jupyterlab server extension appears to be missing.\n',
       error

@@ -123,6 +123,12 @@ export class QiskitCompletionProvider implements ICompletionProvider {
   }
 }
 
+interface IStreamContext {
+  generator: AsyncGenerator<ICompletionReturn>;
+  abortController: AbortController;
+  timeoutId?: ReturnType<typeof setTimeout>;
+}
+
 export class QiskitInlineCompletionProvider
   implements IInlineCompletionProvider
 {
@@ -140,7 +146,7 @@ export class QiskitInlineCompletionProvider
     }
   };
 
-  _streamPromises: Map<string, AsyncGenerator> = new Map();
+  _streamPromises: Map<string, IStreamContext> = new Map();
 
   constructor(options: {
     settings: ISettingRegistry.ISettings;
@@ -165,10 +171,26 @@ export class QiskitInlineCompletionProvider
     const text = getInputText(request.text, context.widget);
 
     if (streamingEnabled) {
-      const results = autoCompleteStreaming(text);
+      // Create AbortController for this request
+      const abortController = new AbortController();
+      const streamToken = `qiskit-code-assistant_${new Date().toISOString()}`;
 
-      const streamToken = `qiskit-code-assitant_${new Date().toISOString()}`;
-      this._streamPromises.set(streamToken, results);
+      // Set a timeout for the request
+      const timeout = (this.schema.default as any).timeout || 15000;
+      const timeoutId = setTimeout(() => {
+        console.warn(`Streaming request timed out after ${timeout}ms`);
+        abortController.abort();
+        this._streamPromises.delete(streamToken);
+      }, timeout);
+
+      const generator = autoCompleteStreaming(text, abortController.signal);
+
+      // Store both generator, controller, and timeout for cleanup
+      this._streamPromises.set(streamToken, {
+        generator,
+        abortController,
+        timeoutId
+      } as any);
 
       return Promise.resolve({
         items: [
@@ -201,28 +223,79 @@ export class QiskitInlineCompletionProvider
    * @param token
    */
   async *stream(token: string) {
-    const results = this._streamPromises.get(token);
-    if (!results) {
+    const streamContext = this._streamPromises.get(token);
+    if (!streamContext) {
+      console.warn(`Stream context not found for token: ${token}`);
       return;
     }
 
-    let text = '';
+    const { generator, timeoutId } = streamContext;
+    const textParts: string[] = [];
     let lastChunk: ICompletionReturn | undefined = undefined;
-    for await (const chunk of results) {
-      lastChunk = chunk as ICompletionReturn;
-      text += lastChunk.items[0];
-      yield { response: { insertText: text } };
-    }
 
-    this._streamPromises.delete(token);
-
-    if (lastChunk) {
-      this.prompt_id = lastChunk.prompt_id;
-      if (this.prompt_id) {
-        lastPrompt = lastChunk;
-        this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
+    try {
+      for await (const chunk of generator) {
+        lastChunk = chunk as ICompletionReturn;
+        const newText = lastChunk.items[0];
+        if (newText) {
+          textParts.push(newText);
+          yield { response: { insertText: textParts.join('') } };
+        }
       }
+
+      // Update prompt info after successful completion
+      if (lastChunk) {
+        this.prompt_id = lastChunk.prompt_id;
+        if (this.prompt_id) {
+          lastPrompt = lastChunk;
+          this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
+        }
+      }
+    } catch (error) {
+      // Handle errors during streaming
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.debug(`Stream ${token} was aborted`);
+      } else {
+        console.error('Error during streaming:', error);
+      }
+    } finally {
+      // Clear timeout if it exists
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Always cleanup the stream context
+      this._streamPromises.delete(token);
     }
+  }
+
+  /**
+   * Cancel a specific stream by token
+   * @param token The stream token to cancel
+   */
+  cancelStream(token: string): void {
+    const streamContext = this._streamPromises.get(token);
+    if (streamContext) {
+      if (streamContext.timeoutId) {
+        clearTimeout(streamContext.timeoutId);
+      }
+      streamContext.abortController.abort();
+      this._streamPromises.delete(token);
+      console.debug(`Cancelled stream: ${token}`);
+    }
+  }
+
+  /**
+   * Cancel all active streams
+   */
+  cancelAllStreams(): void {
+    for (const [token, context] of this._streamPromises.entries()) {
+      if (context.timeoutId) {
+        clearTimeout(context.timeoutId);
+      }
+      context.abortController.abort();
+      console.debug(`Cancelled stream: ${token}`);
+    }
+    this._streamPromises.clear();
   }
 
   async isApplicable(context: ICompletionContext): Promise<boolean> {

@@ -217,26 +217,95 @@ export async function postModelPrompt(
 // POST /model/{model_id}/prompt
 export async function* postModelPromptStreaming(
   model_id: string,
-  input: string
+  input: string,
+  signal?: AbortSignal
 ): AsyncGenerator<IModelPromptResponse> {
-  const response = await requestAPIStreaming(`model/${model_id}/prompt`, {
-    method: 'POST',
-    body: JSON.stringify({ input, stream: true })
-  });
+  const response = await requestAPIStreaming(
+    `model/${model_id}/prompt`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ input, stream: true })
+    },
+    signal
+  );
 
+  let buffer = '';
   for await (const chunk of response) {
-    // parse & transform the streaming data chunk
-    const lines = chunk.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.startsWith(STREAM_DATA_PREFIX)) {
+    // Accumulate chunks in buffer to handle partial JSON
+    buffer += chunk;
+    const lines = buffer.split('\n');
+
+    // Keep the last incomplete line in the buffer
+    buffer = lines.pop() || '';
+
+    // Process complete lines
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith(STREAM_DATA_PREFIX)) {
         try {
           // remove 'data: ' prefix and parse remaining string
-          const data = JSON.parse(line.substring(STREAM_DATA_PREFIX.length));
-          yield data;
+          const jsonStr = trimmed.substring(STREAM_DATA_PREFIX.length);
+          if (jsonStr) {
+            const data = JSON.parse(jsonStr);
+
+            // Check if this is an error message from the backend
+            if (data.error) {
+              console.error(`Backend streaming error: ${data.error}`, data);
+              Notification.error(
+                `Qiskit Code Assistant Error:\n${data.error}`,
+                { autoClose: 5000 }
+              );
+              // Continue streaming despite errors unless it's critical
+              if (data.type !== 'chunk_processing_error') {
+                throw new Error(data.error);
+              }
+            } else {
+              yield data;
+            }
+          }
         } catch (error) {
-          // JSON parsing errors
-          console.error(`Error parsing JSON: ${error}`);
+          // JSON parsing errors - log with more context
+          console.error(`Error parsing JSON chunk: ${error}`, {
+            line: trimmed,
+            buffer
+          });
+          // Re-throw non-parsing errors
+          if (!(error instanceof SyntaxError)) {
+            throw error;
+          }
+        }
+      }
+    }
+  }
+
+  // Process any remaining data in buffer
+  if (buffer.trim()) {
+    const trimmed = buffer.trim();
+    if (trimmed.startsWith(STREAM_DATA_PREFIX)) {
+      try {
+        const jsonStr = trimmed.substring(STREAM_DATA_PREFIX.length);
+        if (jsonStr) {
+          const data = JSON.parse(jsonStr);
+
+          // Check for errors in final chunk too
+          if (data.error) {
+            console.error(`Backend streaming error: ${data.error}`, data);
+            Notification.error(`Qiskit Code Assistant Error:\n${data.error}`, {
+              autoClose: 5000
+            });
+            if (data.type !== 'chunk_processing_error') {
+              throw new Error(data.error);
+            }
+          } else {
+            yield data;
+          }
+        }
+      } catch (error) {
+        console.error(`Error parsing final JSON chunk: ${error}`, {
+          buffer: trimmed
+        });
+        if (!(error instanceof SyntaxError)) {
+          throw error;
         }
       }
     }

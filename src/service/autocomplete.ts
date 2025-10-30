@@ -49,12 +49,13 @@ async function promptPromise(
 
 async function* promptPromiseStreaming(
   model: string,
-  requestText: string
+  requestText: string,
+  signal?: AbortSignal
 ): AsyncGenerator<ICompletionReturn> {
   // Show loading icon in status bar
   StatusBarWidget.widget.setLoadingStatus();
 
-  const responseData = postModelPromptStreaming(model, requestText);
+  const responseData = postModelPromptStreaming(model, requestText, signal);
 
   for await (const chunk of responseData) {
     const item: ICompletionReturn = {
@@ -107,7 +108,8 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
 }
 
 export async function* autoCompleteStreaming(
-  text: string
+  text: string,
+  signal?: AbortSignal
 ): AsyncGenerator<ICompletionReturn> {
   const emptyReturn: ICompletionReturn = {
     items: [],
@@ -125,8 +127,11 @@ export async function* autoCompleteStreaming(
     if (model === undefined) {
       console.error('Failed to send prompt', 'No model selected');
       yield emptyReturn;
-    } else if (model.disclaimer?.accepted) {
-      const response = await promptPromiseStreaming(model._id, requestText);
+      return;
+    }
+
+    if (model.disclaimer?.accepted) {
+      const response = promptPromiseStreaming(model._id, requestText, signal);
 
       for await (const chunk of response) {
         yield chunk;
@@ -134,7 +139,7 @@ export async function* autoCompleteStreaming(
     } else {
       const accepted = await showDisclaimer(model._id);
       if (accepted) {
-        const response = await promptPromiseStreaming(model._id, requestText);
+        const response = promptPromiseStreaming(model._id, requestText, signal);
 
         for await (const chunk of response) {
           yield chunk;
@@ -146,7 +151,13 @@ export async function* autoCompleteStreaming(
     }
   } catch (e) {
     console.error('Failed to send prompt', e);
-    return emptyReturn;
+    // Check if error is due to abort - don't yield error in that case
+    if (e instanceof Error && e.name === 'AbortError') {
+      console.debug('Streaming was cancelled by user');
+    } else {
+      // For other errors, yield empty return to provide feedback
+      yield emptyReturn;
+    }
   } finally {
     // Remove loading icon from status bar
     StatusBarWidget.widget.refreshStatusBar();
