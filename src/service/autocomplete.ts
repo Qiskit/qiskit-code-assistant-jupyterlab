@@ -103,7 +103,7 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
     })
     .finally(() => {
       // Remove loading icon from status bar
-      StatusBarWidget.widget.refreshStatusBar();
+      StatusBarWidget.widget.stopLoadingStatus();
     });
 }
 
@@ -160,6 +160,6 @@ export async function* autoCompleteStreaming(
     }
   } finally {
     // Remove loading icon from status bar
-    StatusBarWidget.widget.refreshStatusBar();
+    StatusBarWidget.widget.stopLoadingStatus();
   }
 }
