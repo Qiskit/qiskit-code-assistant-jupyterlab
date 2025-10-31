@@ -28,6 +28,7 @@ import {
 
 const AUTH_ERROR_CODES = [401, 403, 422];
 const STREAM_DATA_PREFIX = 'data: ';
+const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB max buffer size to prevent memory issues
 
 async function notifyInvalid(response: Response): Promise<void> {
   if (AUTH_ERROR_CODES.includes(response.status)) {
@@ -231,8 +232,25 @@ export async function* postModelPromptStreaming(
 
   let buffer = '';
   for await (const chunk of response) {
+    // Check if signal was aborted
+    if (signal?.aborted) {
+      console.debug('Stream processing aborted by signal');
+      break;
+    }
+
     // Accumulate chunks in buffer to handle partial JSON
     buffer += chunk;
+
+    // Protect against unbounded buffer growth
+    if (buffer.length > MAX_BUFFER_SIZE) {
+      const error = `Stream buffer exceeded maximum size (${MAX_BUFFER_SIZE} bytes)`;
+      console.error(error);
+      Notification.error(`Qiskit Code Assistant Error:\n${error}`, {
+        autoClose: 5000
+      });
+      throw new Error(error);
+    }
+
     const lines = buffer.split('\n');
 
     // Keep the last incomplete line in the buffer
