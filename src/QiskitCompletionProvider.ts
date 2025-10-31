@@ -171,12 +171,23 @@ export class QiskitInlineCompletionProvider
     const text = getInputText(request.text, context.widget);
 
     if (streamingEnabled) {
+      // Cancel any previous streams to prevent race conditions
+      if (this._streamPromises.size > 0) {
+        console.debug(
+          `Cancelling ${this._streamPromises.size} existing stream(s) before starting new one`
+        );
+        this.cancelAllStreams();
+      }
+
       // Create AbortController for this request
       const abortController = new AbortController();
-      const streamToken = `qiskit-code-assistant_${new Date().toISOString()}`;
+      const streamToken = `qiskit-code-assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Set a timeout for the request
-      const timeout = (this.schema.default as any).timeout || 15000;
+      // Calculate adaptive timeout based on context size
+      const baseTimeout = (this.schema.default as any).timeout || 15000;
+      const contextBonus = Math.min(Math.floor(text.length / 100), 30000);
+      const timeout = baseTimeout + contextBonus;
+
       const timeoutId = setTimeout(() => {
         console.warn(`Streaming request timed out after ${timeout}ms`);
         abortController.abort();
@@ -185,12 +196,12 @@ export class QiskitInlineCompletionProvider
 
       const generator = autoCompleteStreaming(text, abortController.signal);
 
-      // Store both generator, controller, and timeout for cleanup
+      // Store generator, controller, and timeout for tracking
       this._streamPromises.set(streamToken, {
         generator,
         abortController,
         timeoutId
-      } as any);
+      });
 
       return Promise.resolve({
         items: [
