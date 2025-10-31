@@ -39,6 +39,47 @@ By default, the `jlpm build` command generates the source maps for this extensio
 jupyter lab build --minimize=False
 ```
 
+## Testing
+
+This extension uses Jest for unit testing. The test suite covers API services, autocomplete functionality, completion providers, and utility functions.
+
+### Running tests
+
+```bash
+# Run all tests
+jlpm test
+
+# Run tests in watch mode (useful during development)
+jlpm test:watch
+
+# Run tests with coverage report
+jlpm test:coverage
+```
+
+### Writing tests
+
+Test files should be placed in `__tests__` directories adjacent to the code they test, or use the `.test.ts` or `.spec.ts` suffix. The test infrastructure is configured to:
+
+- Use Jest with TypeScript support
+- Mock JupyterLab components automatically
+- Generate coverage reports in the `coverage/` directory
+- Support both `.ts` and `.tsx` files
+
+Example test structure:
+```typescript
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+
+describe('MyComponent', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should do something', () => {
+    expect(true).toBe(true);
+  });
+});
+```
+
 ## Development uninstall
 
 ```bash
