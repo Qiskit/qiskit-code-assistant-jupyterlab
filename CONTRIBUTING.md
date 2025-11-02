@@ -41,9 +41,9 @@ jupyter lab build --minimize=False
 
 ## Testing
 
-This extension uses Jest for unit testing. The test suite covers API services, autocomplete functionality, completion providers, and utility functions.
+This extension uses Jest for unit testing. The test suite includes 60+ tests covering API services, autocomplete functionality, completion providers, and utility functions with excellent coverage of core business logic.
 
-### Running tests
+### Quick Start
 
 ```bash
 # Run all tests
@@ -56,29 +56,17 @@ jlpm test:watch
 jlpm test:coverage
 ```
 
-### Writing tests
+### Comprehensive Testing Guide
 
-Test files should be placed in `__tests__` directories adjacent to the code they test, or use the `.test.ts` or `.spec.ts` suffix. The test infrastructure is configured to:
+For detailed information about the testing infrastructure, including:
+- Test structure and organization
+- Writing new tests
+- Mocking dependencies
+- Debugging tests
+- CI/CD integration
+- Best practices
 
-- Use Jest with TypeScript support
-- Mock JupyterLab components automatically
-- Generate coverage reports in the `coverage/` directory
-- Support both `.ts` and `.tsx` files
-
-Example test structure:
-```typescript
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-
-describe('MyComponent', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should do something', () => {
-    expect(true).toBe(true);
-  });
-});
-```
+Please refer to **[TESTING.md](TESTING.md)** for the complete testing guide.
 
 ## Development uninstall
 
