@@ -3,4 +3,5 @@ node_modules
 **/lib
 **/package.json
 !/package.json
+package-lock.json
 qiskit_code_assistant_jupyterlab
