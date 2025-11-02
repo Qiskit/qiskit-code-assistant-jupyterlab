@@ -24,16 +24,20 @@ jobs:
     - name: Install dependencies
       run: python -m pip install -U "jupyterlab>=4.0.0,<5"
 
+    - name: Install Node.js dependencies
+      run: |
+        set -eux
+        jlpm install || jlpm install --verbose
+
     - name: Lint the extension
       run: |
         set -eux
-        jlpm
         jlpm run lint:check
 
     - name: Run tests
       run: |
         set -eux
-        jlpm run test:coverage
+        jlpm test:coverage
 
     - name: Build the extension
       run: |
