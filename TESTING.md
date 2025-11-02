@@ -60,7 +60,6 @@ After running, open `coverage/lcov-report/index.html` in your browser to view th
 Tests are organized using the following patterns:
 
 1. **`__tests__` directories**: Tests in directories adjacent to the source code
-
    - Example: `src/service/__tests__/api.test.ts` tests `src/service/api.ts`
 
 2. **`.test.ts` suffix**: Test files with the `.test.ts` or `.test.tsx` extension
