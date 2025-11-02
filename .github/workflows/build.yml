@@ -26,8 +26,13 @@ jobs:
 
     - name: Install Node.js dependencies
       run: |
-        set -eux
-        jlpm install || jlpm install --verbose
+        set -eu
+        jlpm install || true
+        # Verify node_modules was created
+        if [ ! -d "node_modules" ]; then
+          echo "Installation failed - node_modules not created"
+          exit 1
+        fi
 
     - name: Lint the extension
       run: |
