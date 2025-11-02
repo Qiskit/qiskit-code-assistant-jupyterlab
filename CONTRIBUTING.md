@@ -59,6 +59,7 @@ jlpm test:coverage
 ### Comprehensive Testing Guide
 
 For detailed information about the testing infrastructure, including:
+
 - Test structure and organization
 - Writing new tests
 - Mocking dependencies

@@ -15,17 +15,18 @@ The project uses Jest as the testing framework with TypeScript support. The test
 
 Current test coverage (60 tests):
 
-| File Category | Statement Coverage | Branch Coverage | Function Coverage |
-|--------------|-------------------|-----------------|-------------------|
-| Overall | 67.88% | 37.01% | 58.24% |
-| API Service | 86.86% | 80.76% | 100% |
-| Autocomplete | 100% | 86.11% | 100% |
-| Completion Providers | 89.28% | 65.38% | 100% |
-| Utility Handlers | 100% | 100% | 100% |
+| File Category        | Statement Coverage | Branch Coverage | Function Coverage |
+| -------------------- | ------------------ | --------------- | ----------------- |
+| Overall              | 67.88%             | 37.01%          | 58.24%            |
+| API Service          | 86.86%             | 80.76%          | 100%              |
+| Autocomplete         | 100%               | 86.11%          | 100%              |
+| Completion Providers | 89.28%             | 65.38%          | 100%              |
+| Utility Handlers     | 100%               | 100%            | 100%              |
 
 ## Running Tests
 
 ### Run all tests
+
 ```bash
 npm test
 # or
@@ -33,7 +34,9 @@ jlpm test
 ```
 
 ### Run tests in watch mode
+
 Useful during development - automatically reruns tests when files change:
+
 ```bash
 npm run test:watch
 # or
@@ -41,7 +44,9 @@ jlpm test:watch
 ```
 
 ### Run tests with coverage report
+
 Generates detailed coverage reports in the `coverage/` directory:
+
 ```bash
 npm run test:coverage
 # or
@@ -55,6 +60,7 @@ After running, open `coverage/lcov-report/index.html` in your browser to view th
 Tests are organized using the following patterns:
 
 1. **`__tests__` directories**: Tests in directories adjacent to the source code
+
    - Example: `src/service/__tests__/api.test.ts` tests `src/service/api.ts`
 
 2. **`.test.ts` suffix**: Test files with the `.test.ts` or `.test.tsx` extension
@@ -140,12 +146,14 @@ expect(results).toHaveLength(2);
 ## Test Categories
 
 ### API Service Tests (`src/service/__tests__/api.test.ts`)
+
 - Tests for all API endpoints
 - Request/response handling
 - Error handling
 - Streaming responses
 
 ### Autocomplete Tests (`src/service/__tests__/autocomplete.test.ts`)
+
 - Standard autocomplete functionality
 - Streaming autocomplete
 - Token validation
@@ -153,6 +161,7 @@ expect(results).toHaveLength(2);
 - Input truncation
 
 ### Completion Provider Tests (`src/__tests__/QiskitCompletionProvider.test.ts`)
+
 - QiskitCompletionProvider
 - QiskitInlineCompletionProvider
 - Fetch operations
@@ -160,6 +169,7 @@ expect(results).toHaveLength(2);
 - Streaming support
 
 ### Utility Tests (`src/utils/__tests__/handler.test.ts`)
+
 - Request API wrapper
 - Streaming request handler
 - Error handling
@@ -172,20 +182,25 @@ expect(results).toHaveLength(2);
 This project includes automated testing via GitHub Actions:
 
 #### Test Workflow
+
 The **[Tests workflow](.github/workflows/test.yml)** runs on every push and pull request:
+
 - ✅ Runs tests on multiple platforms (Ubuntu, macOS, Windows)
 - ✅ Tests against Node.js 18.x and 20.x
 - ✅ Generates coverage reports
 - ✅ Provides coverage artifacts for download (viewable in Actions tab)
 
 **Trigger:** Automatically runs on:
+
 - Push to `main` branch
 - Pull requests to any branch
 
 **Status:** Check the ![Tests](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Tests/badge.svg) badge
 
 #### Build Workflow
+
 The **[Build workflow](.github/workflows/build.yml)** includes:
+
 - Linting checks
 - Test execution with coverage
 - Extension building and packaging
@@ -205,16 +220,19 @@ npm run test:coverage
 ### Coverage Reporting
 
 Coverage reports are automatically:
+
 - Generated on every test run in CI
 - Available as artifacts in the Actions tab (for 7 days)
 
 **To view coverage locally:**
+
 ```bash
 npm run test:coverage
 open coverage/lcov-report/index.html
 ```
 
 **To download coverage from CI:**
+
 1. Go to the Actions tab
 2. Click on a workflow run
 3. Scroll to "Artifacts"
@@ -223,16 +241,19 @@ open coverage/lcov-report/index.html
 ## Debugging Tests
 
 ### Run a specific test file
+
 ```bash
 npm test -- src/service/__tests__/api.test.ts
 ```
 
 ### Run tests matching a pattern
+
 ```bash
 npm test -- --testNamePattern="should handle errors"
 ```
 
 ### Run with verbose output
+
 ```bash
 npm test -- --verbose
 ```
@@ -240,16 +261,21 @@ npm test -- --verbose
 ## Common Issues
 
 ### Import Errors
+
 If you encounter module resolution errors, ensure:
+
 - Mock files exist in `src/__mocks__/@jupyterlab/`
 - `jest.config.js` includes proper module mappings
 
 ### TypeScript Errors
+
 - Tests use relaxed TypeScript configuration (`tsconfig.test.json`)
 - Use `as any` for complex mock type casting when needed
 
 ### Async Test Timeouts
+
 Increase timeout for long-running tests:
+
 ```typescript
 it('long test', async () => {
   // test code
