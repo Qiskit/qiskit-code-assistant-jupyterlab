@@ -30,6 +30,11 @@ jobs:
         jlpm
         jlpm run lint:check
 
+    - name: Run tests
+      run: |
+        set -eux
+        jlpm run test:coverage
+
     - name: Build the extension
       run: |
         set -eux

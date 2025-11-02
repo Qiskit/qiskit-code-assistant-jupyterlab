@@ -167,21 +167,58 @@ expect(results).toHaveLength(2);
 
 ## Continuous Integration
 
-To integrate tests into CI/CD pipelines:
+### GitHub Actions
 
-```yaml
-# Example for GitHub Actions
-- name: Run tests
-  run: npm test
+This project includes automated testing via GitHub Actions:
 
-- name: Run tests with coverage
-  run: npm run test:coverage
+#### Test Workflow
+The **[Tests workflow](.github/workflows/test.yml)** runs on every push and pull request:
+- ✅ Runs tests on multiple platforms (Ubuntu, macOS, Windows)
+- ✅ Tests against Node.js 18.x and 20.x
+- ✅ Generates coverage reports
+- ✅ Provides coverage artifacts for download (viewable in Actions tab)
 
-- name: Upload coverage
-  uses: codecov/codecov-action@v3
-  with:
-    files: ./coverage/lcov.info
+**Trigger:** Automatically runs on:
+- Push to `main` branch
+- Pull requests to any branch
+
+**Status:** Check the ![Tests](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Tests/badge.svg) badge
+
+#### Build Workflow
+The **[Build workflow](.github/workflows/build.yml)** includes:
+- Linting checks
+- Test execution with coverage
+- Extension building and packaging
+- Link checking
+
+### Running Tests Locally Like CI
+
+To replicate the CI environment locally:
+
+```bash
+# Run the same commands as CI
+npm install
+npm test
+npm run test:coverage
 ```
+
+### Coverage Reporting
+
+Coverage reports are automatically:
+- Generated on every test run in CI
+- Available as artifacts in the Actions tab (for 7 days)
+
+**To view coverage locally:**
+```bash
+npm run test:coverage
+open coverage/lcov-report/index.html
+```
+
+**To download coverage from CI:**
+1. Go to the Actions tab
+2. Click on a workflow run
+3. Scroll to "Artifacts"
+4. Download "coverage-report"
 
 ## Debugging Tests
 
