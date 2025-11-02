@@ -56,7 +56,10 @@ export interface IInlineCompletionProvider {
   name: string;
   icon?: any;
   schema?: any;
-  fetch(request: any, context: IInlineCompletionContext): Promise<IInlineCompletionList>;
+  fetch(
+    request: any,
+    context: IInlineCompletionContext
+  ): Promise<IInlineCompletionList>;
   stream?(token: string): AsyncGenerator<any>;
   isApplicable(context: ICompletionContext): Promise<boolean>;
 }

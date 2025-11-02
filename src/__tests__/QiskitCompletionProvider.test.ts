@@ -151,7 +151,10 @@ describe('QiskitCompletionProvider', () => {
 
       // Create a proper mock that extends NotebookPanel
       const context = {
-        widget: Object.assign(Object.create({ constructor: { name: 'NotebookPanel' } }), mockNotebookPanel)
+        widget: Object.assign(
+          Object.create({ constructor: { name: 'NotebookPanel' } }),
+          mockNotebookPanel
+        )
       } as any;
 
       const request = { text: 'current cell', offset: 0 } as any;
@@ -179,7 +182,9 @@ describe('QiskitCompletionProvider', () => {
 
   describe('accept', () => {
     it('should post acceptance when prompt_id exists and text matches', async () => {
-      mockPostModelPromptAccept.mockResolvedValue({ message: 'Accepted' } as any);
+      mockPostModelPromptAccept.mockResolvedValue({
+        message: 'Accepted'
+      } as any);
 
       provider.prompt_id = 'prompt-123';
       provider.results = ['completion1', 'completion2'];
@@ -238,7 +243,9 @@ describe('QiskitInlineCompletionProvider', () => {
 
   describe('constructor', () => {
     it('should initialize with correct identifier and name', () => {
-      expect(provider.identifier).toBe('qiskit-code-assistant-inline-completer');
+      expect(provider.identifier).toBe(
+        'qiskit-code-assistant-inline-completer'
+      );
       expect(provider.name).toBe('Qiskit Code Assistant');
     });
   });
@@ -370,7 +377,9 @@ describe('QiskitInlineCompletionProvider', () => {
 
   describe('accept', () => {
     it('should post acceptance when prompt_id exists', async () => {
-      mockPostModelPromptAccept.mockResolvedValue({ message: 'Accepted' } as any);
+      mockPostModelPromptAccept.mockResolvedValue({
+        message: 'Accepted'
+      } as any);
 
       provider.prompt_id = 'prompt-123';
       await provider.accept();

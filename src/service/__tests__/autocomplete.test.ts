@@ -15,7 +15,11 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { autoComplete, autoCompleteStreaming, CHAR_LIMIT } from '../autocomplete';
+import {
+  autoComplete,
+  autoCompleteStreaming,
+  CHAR_LIMIT
+} from '../autocomplete';
 import * as api from '../api';
 import * as modelHandler from '../modelHandler';
 import * as token from '../token';

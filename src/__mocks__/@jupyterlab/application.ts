@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-export interface JupyterFrontEnd {
+export interface IJupyterFrontEnd {
   commands: {
     notifyCommandChanged: jest.Mock;
   };
 }
 
-export interface JupyterFrontEndPlugin<T> {
+export interface IJupyterFrontEndPlugin<T> {
   id: string;
   description?: string;
   autoStart?: boolean;

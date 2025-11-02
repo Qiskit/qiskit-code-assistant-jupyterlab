@@ -21,7 +21,10 @@ export const ServerConnection = {
   makeRequest: jest.fn(),
   NetworkError: class extends Error {},
   ResponseError: class extends Error {
-    constructor(public response: Response, message: string) {
+    constructor(
+      public response: Response,
+      message: string
+    ) {
       super(message);
     }
   }
