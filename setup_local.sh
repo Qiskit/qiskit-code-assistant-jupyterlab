@@ -368,16 +368,26 @@ check_extension() {
     fi
 }
 
-# Install the Qiskit Code Assistant extension
-install_extension() {
-    print_status "Installing Qiskit Code Assistant JupyterLab extension using $PACKAGE_MANAGER..."
+# Install or upgrade the Qiskit Code Assistant extension
+install_or_upgrade_extension() {
+    print_status "Updating Qiskit Code Assistant JupyterLab extension using $PACKAGE_MANAGER..."
 
-    if install_python_package "qiskit_code_assistant_jupyterlab"; then
-        print_success "Extension installed successfully"
-        return 0
+    if [ "$PACKAGE_MANAGER" = "uv" ]; then
+        if uv pip install --upgrade "qiskit_code_assistant_jupyterlab"; then
+            print_success "Extension updated successfully"
+            return 0
+        else
+            print_error "Failed to update extension"
+            return 1
+        fi
     else
-        print_error "Failed to install extension"
-        return 1
+        if pip install --upgrade "qiskit_code_assistant_jupyterlab"; then
+            print_success "Extension updated successfully"
+            return 0
+        else
+            print_error "Failed to update extension"
+            return 1
+        fi
     fi
 }
 
@@ -471,21 +481,12 @@ main() {
         fi
     fi
 
-    # Check and install extension if needed
+    # Always update the extension to the latest version
+    echo ""
     extension_installed=true
-    if ! check_extension; then
-        echo ""
-        read -p "$(echo -e ${YELLOW}Would you like to install the Qiskit Code Assistant extension now? [Y/n]: ${NC})" -n 1 -r
-        echo ""
-        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-            if ! install_extension; then
-                extension_installed=false
-                print_warning "Extension installation failed. You can install it manually later: pip install qiskit_code_assistant_jupyterlab"
-            fi
-        else
-            extension_installed=false
-            print_warning "Skipping extension installation. You'll need to install it manually: pip install qiskit_code_assistant_jupyterlab"
-        fi
+    if ! install_or_upgrade_extension; then
+        extension_installed=false
+        print_warning "Extension update failed. You can install/update it manually later: pip install --upgrade qiskit_code_assistant_jupyterlab"
     fi
 
     install_ollama
