@@ -68,6 +68,10 @@ export class StatusBarWidget extends Widget {
     this._statusBar.innerHTML = this._statusBar.innerHTML + refreshIcon.svgstr;
   }
 
+  stopLoadingStatus(): void {
+    this.refreshStatusBar();
+  }
+
   async onClick() {
     await checkAPIToken().then(() => {
       const modelsList = getModelsList();

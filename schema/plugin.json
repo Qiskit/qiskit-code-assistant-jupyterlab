@@ -46,7 +46,7 @@
       "title": "Enable Streaming",
       "description": "Stream response from the Qiskit Code Assistant Service",
       "type": "boolean",
-      "default": false
+      "default": true
     }
   },
   "additionalProperties": false
