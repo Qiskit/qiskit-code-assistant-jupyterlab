@@ -37,11 +37,17 @@ Use `Alt .`, `Alt \` or `Tab` with code to obtain specific model-generated sugge
 
 ## Get started
 
-### Obtain your IBM Quantum Platform API token
+You can use Qiskit Code Assistant in two ways:
+
+### Option 1: IBM Quantum Cloud (Recommended)
+
+Requires an IBM Quantum Premium Plan account for the best experience.
+
+#### Obtain your IBM Quantum Platform API token
 
 Open the [IBM Quantum Platform](https://quantum.cloud.ibm.com/) in your browser and log in with your IBM Quantum Cloud account. After logging in, an IBM Quantum API token is displayed on the upper right side of the web page.
 
-### Set the API token in the JupyterLab extension
+#### Set the API token in the JupyterLab extension
 
 When you first open Jupyterlab in a new window or tab you may see that the status bar
 is highlighted orange, this shows that the service is not reachable.
@@ -61,11 +67,67 @@ configuration file `~/.qiskit/qiskit-ibm.json` exists then the API token will be
 populated at application start. If an API token is entered via the extension it will be
 stored in `~/.qiskit/qiskit-ibm.json` under a new config named `qiskit-code-assistant`
 
-### Accept the model disclaimer/EULA
+#### Accept the model disclaimer/EULA
 
 By default, the model you will use is `mistral-small-3.2-24b-qiskit`. It will appear in the Model Picker in the bottom of the status bar.
 
 The first time you use the `mistral-small-3.2-24b-qiskit` model, a model disclaimer/EULA will appear with information about the model and links to documentation and the model's license. It will also list some restrictions that you should be aware of when using the model, including a restriction against using proprietary code. Clicking `Accept` will enable the new model during code generation.
+
+### Option 2: Local Setup (For Non-Premium Users)
+
+If you don't have an IBM Quantum Premium Plan account, you can run the Qiskit Code Assistant entirely on your local machine using open-source models.
+
+#### Quick Setup (One Command)
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Qiskit/qiskit-code-assistant-jupyterlab/main/setup_local.sh)
+```
+
+Or if you cloned the repository:
+
+```bash
+bash setup_local.sh
+```
+
+For automated/CI setups, use non-interactive mode:
+
+```bash
+bash setup_local.sh --non-interactive
+# Or: bash setup_local.sh -y
+```
+
+#### What the script does
+
+- Detects and uses `uv` for faster installations (if available)
+- Checks and optionally installs JupyterLab (if needed)
+- Always upgrades the extension to the latest version
+- Installs and configures Ollama (local LLM server)
+- Downloads the Qwen2.5-Coder 14B model optimized for Qiskit (~9GB)
+- Configures optimal model parameters
+- Sets up JupyterLab extension automatically
+
+#### Requirements
+
+- **Operating System**: macOS, Linux, or Windows (via Git Bash or WSL)
+- **Python**: 3.8+ with pip installed
+- **RAM**: 16GB+ recommended (8GB+ for lighter models)
+- **Disk Space**: ~5-20GB depending on model size
+
+#### Available Models
+
+The setup script supports multiple models. By default, it uses **Qwen2.5-Coder 14B** which offers the best quality for code generation.
+
+| Model                           | Size  | Quality       | RAM Required |
+| ------------------------------- | ----- | ------------- | ------------ |
+| **Qwen2.5-Coder 14B** (Default) | ~9GB  | Best for code | 16GB+        |
+| Mistral Small 24B               | ~15GB | Most recent   | 24GB+        |
+| Granite 3.3 8B                  | ~5GB  | Lightweight   | 8GB+         |
+
+All models are trained on **Qiskit 2.0+** and optimized for quantum computing code assistance.
+
+For detailed instructions, see the [Local Setup Guide](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/blob/main/LOCAL_SETUP.md).
+
+## Using the Extension
 
 ### Generate code suggestions
 

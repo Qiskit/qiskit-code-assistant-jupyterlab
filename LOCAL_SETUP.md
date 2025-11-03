@@ -1,6 +1,6 @@
 # Qiskit Code Assistant - Local Setup Guide
 
-Run the Qiskit Code Assistant entirely on your local machine using open-source models!
+Run the Qiskit Code Assistant entirely on your local machine using our Qiskit open-source models!
 
 ## Quick Start (One Command)
 
@@ -17,12 +17,28 @@ bash setup_local.sh
 That's it! The script will:
 
 - Check and optionally install JupyterLab (if not present)
-- Check and optionally install the Qiskit Code Assistant extension (if not present)
+- Always upgrade the Qiskit Code Assistant extension to the latest version
 - Install Ollama (if not already installed)
 - Download the recommended Qiskit model
 - Configure optimal model parameters
 - Set up JupyterLab extension settings
 - Verify everything is working
+
+### Non-Interactive Mode
+
+For CI/CD pipelines or automated setups, use the `--non-interactive` flag to skip all prompts:
+
+```bash
+bash setup_local.sh --non-interactive
+# Or use the short form:
+bash setup_local.sh -y
+```
+
+This will automatically:
+
+- Install JupyterLab if missing (no prompt)
+- Upgrade the extension to the latest version
+- Proceed with all default options
 
 ## Requirements
 
@@ -48,7 +64,7 @@ The setup script supports multiple models. By default, it uses **Qwen2.5-Coder 1
 | ------------------------------- | ----- | --------------------------------------------------- | ------------ | ------------------------------------------------ |
 | **Qwen2.5-Coder 14B** (Default) | ~9GB  | Best for code                                       | 16GB+        | `hf.co/Qiskit/qwen2.5-coder-14b-qiskit-GGUF`     |
 | Mistral Small 24B               | ~15GB | Most recent model                                   | 24GB+        | `hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF` |
-| Granite 3.3 8B                  | ~5GB  | Lightweight option, not optimal for code generation | 8GB+         | `hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF`        |
+| Granite 3.3 8B                  | ~5GB  | Lightweight option, less accurate for code generation | 8GB+         | `hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF`        |
 
 All models are trained on **Qiskit 2.0+** and optimized for quantum computing code assistance.
 
@@ -60,14 +76,25 @@ All models are trained on **Qiskit 2.0+** and optimized for quantum computing co
 # Use the most recent model (Mistral Small 24B) if you have 24GB+ RAM
 bash setup_local.sh hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF
 
-# For systems with 8-12GB RAM (not recommended for production)
+# For systems with 8-12GB RAM (lightweight option, less accurate)
 bash setup_local.sh hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF
+
+# Combine with non-interactive mode for automation
+bash setup_local.sh -y hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF
 ```
 
-### List Available Models
+### Script Options
 
 ```bash
+# Show help
+bash setup_local.sh --help
+
+# List available models
 bash setup_local.sh --list-models
+
+# Non-interactive mode (for automation)
+bash setup_local.sh --non-interactive
+bash setup_local.sh -y
 ```
 
 ## Manual Setup (Alternative)
@@ -532,9 +559,8 @@ If you encounter issues:
 ## Additional Resources
 
 - **Ollama Documentation**: https://ollama.com/docs
-- **Qiskit Documentation**: https://docs.quantum.ibm.com
-- **Model Repository**: https://huggingface.co/Qiskit
-- **IBM Quantum Docs**: https://quantum.cloud.ibm.com/docs/en/guides/qiskit-code-assistant-local
+- **Qiskit Organization in HuggingFace**: https://huggingface.co/Qiskit
+- **Qiskit Code Assistant Docs**: https://quantum.cloud.ibm.com/docs/en/guides/qiskit-code-assistant-local
 
 ## Contributing
 

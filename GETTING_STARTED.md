@@ -2,13 +2,13 @@
 
 > **Looking to run locally?** Check out [LOCAL_SETUP.md](LOCAL_SETUP.md) for a free, private, offline setup using your own computer!
 
-This guide covers setting up the Qiskit Code Assistant with IBM Quantum Cloud. For local deployment options, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
+This guide covers setting up the Qiskit Code Assistant through IBM Quantum Cloud Platform. For local deployment options, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
 
 ## Requirements
 
 - JupyterLab >= 4.3.0
 - Access to either:
-  - An IBM Quantum premium account
+  - An IBM Quantum premium plan user account
   - A local LLM service (see [LOCAL_SETUP.md](LOCAL_SETUP.md))
   - A service exposing LLMs using OpenAI-compatible API endpoints
 
@@ -34,7 +34,7 @@ To remove the extension, execute:
 pip uninstall qiskit_code_assistant_jupyterlab
 ```
 
-## Using the Qiskit Code Assistant with IBM Quantum Cloud (recommended)
+## Using the Qiskit Code Assistant through IBM Quantum Cloud Platform (recommended)
 
 ### IBM Quantum API Token
 

@@ -14,7 +14,7 @@ pip install qiskit_code_assistant_jupyterlab
 
 **Requirements:**
 
-- IBM Quantum Premium account
+- IBM Quantum Premium Plan user account
 - Internet connection
 
 **Setup:**
@@ -34,9 +34,9 @@ See [GETTING_STARTED.md](GETTING_STARTED.md) for detailed cloud setup instructio
 - ✅ Consistent performance
 - ✅ Best user experience
 
-### Option B: Local Setup (For Non-Premium Users)
+### Option B: Local Setup (For Non-Premium Plan Users)
 
-If you don't have an IBM Quantum Premium account, you can run locally:
+If you don't have an IBM Quantum Premium Plan account, you can run locally:
 
 **One command to set everything up:**
 
@@ -50,11 +50,18 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Qiskit/qiskit-code-assistant
 bash setup_local.sh
 ```
 
+**For automated/CI setups (non-interactive):**
+
+```bash
+bash setup_local.sh --non-interactive
+# Or: bash setup_local.sh -y
+```
+
 **What this does:**
 
 - Detects and uses `uv` for faster installations (if available)
 - Checks and optionally installs JupyterLab (if needed)
-- Checks and optionally installs the extension (if needed)
+- Always upgrades the extension to the latest version
 - Installs Ollama (if needed)
 - Downloads the Qwen2.5-Coder 14B model (~9GB)
 - Configures optimal model parameters

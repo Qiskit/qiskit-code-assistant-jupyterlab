@@ -15,7 +15,19 @@ NC='\033[0m' # No Color
 
 # Default model - Qwen2.5-Coder 14B (best quality for code generation)
 DEFAULT_MODEL="hf.co/Qiskit/qwen2.5-coder-14b-qiskit-GGUF"
-MODEL_NAME="${1:-$DEFAULT_MODEL}"
+
+# Non-interactive mode (auto-accept all prompts)
+NON_INTERACTIVE=false
+
+# Parse arguments
+MODEL_NAME="$DEFAULT_MODEL"
+for arg in "$@"; do
+    if [[ "$arg" == "--non-interactive" ]] || [[ "$arg" == "-y" ]]; then
+        NON_INTERACTIVE=true
+    elif [[ "$arg" != "--help" ]] && [[ "$arg" != "-h" ]] && [[ "$arg" != "--list-models" ]]; then
+        MODEL_NAME="$arg"
+    fi
+done
 
 # Configuration
 OLLAMA_URL="http://localhost:11434"
@@ -124,37 +136,17 @@ install_ollama() {
     print_success "Ollama installed successfully"
 }
 
-# Manual installation for macOS (download and extract)
+# Manual installation for macOS
 install_ollama_macos_manual() {
-    print_status "Downloading Ollama for macOS..."
-
-    # Download the Ollama CLI binary
-    TEMP_DIR=$(mktemp -d)
-    cd "$TEMP_DIR" || exit 1
-
-    if curl -fsSL https://ollama.com/download/ollama-darwin -o ollama; then
-        print_status "Installing Ollama to /usr/local/bin..."
-        chmod +x ollama
-
-        # Try to install to /usr/local/bin (may require sudo)
-        if mv ollama /usr/local/bin/ollama 2>/dev/null; then
-            print_success "Ollama installed to /usr/local/bin/ollama"
-        else
-            print_warning "Need elevated privileges to install to /usr/local/bin"
-            sudo mv ollama /usr/local/bin/ollama
-            print_success "Ollama installed to /usr/local/bin/ollama"
-        fi
-
-        cd - > /dev/null
-        rm -rf "$TEMP_DIR"
-    else
-        print_error "Failed to download Ollama"
-        cd - > /dev/null
-        rm -rf "$TEMP_DIR"
-        print_warning "Please download manually from: https://ollama.com/download"
-        print_warning "After installation, press Enter to continue..."
-        read -r
-    fi
+    print_warning "Ollama must be installed manually on macOS."
+    print_status "Please download and install Ollama from:"
+    print_status "  https://ollama.com/download"
+    echo ""
+    print_status "Download the Ollama.app and move it to Applications."
+    print_status "Then launch Ollama from Applications to complete setup."
+    echo ""
+    print_warning "After installation completes, press Enter to continue..."
+    read -r
 }
 
 # Start Ollama service
@@ -445,12 +437,19 @@ main() {
     if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
         echo "Qiskit Code Assistant - Local Setup Script"
         echo ""
-        echo "Usage: bash setup_local.sh [model_name]"
+        echo "Usage: bash setup_local.sh [OPTIONS] [model_name]"
+        echo ""
+        echo "Options:"
+        echo "  --help, -h              Show this help message"
+        echo "  --list-models           List available models"
+        echo "  --non-interactive, -y   Run in non-interactive mode (auto-accept prompts)"
         echo ""
         display_available_models
-        echo "Example:"
+        echo "Examples:"
         echo "  bash setup_local.sh"
+        echo "  bash setup_local.sh --non-interactive"
         echo "  bash setup_local.sh hf.co/Qiskit/qwen2.5-coder-14b-qiskit-GGUF"
+        echo "  bash setup_local.sh -y hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF"
         echo ""
         exit 0
     fi
@@ -467,17 +466,25 @@ main() {
     # Check and install JupyterLab if needed
     jupyterlab_installed=true
     if ! check_jupyterlab; then
-        echo ""
-        read -p "$(echo -e ${YELLOW}Would you like to install JupyterLab now? [Y/n]: ${NC})" -n 1 -r
-        echo ""
-        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        if [ "$NON_INTERACTIVE" = true ]; then
+            print_status "Non-interactive mode: auto-installing JupyterLab..."
             if ! install_jupyterlab; then
                 print_error "Cannot proceed without JupyterLab. Please install it manually and run this script again."
                 exit 1
             fi
         else
-            jupyterlab_installed=false
-            print_warning "Skipping JupyterLab installation. You'll need to install it manually: pip install jupyterlab"
+            echo ""
+            read -p "$(echo -e ${YELLOW}Would you like to install JupyterLab now? [Y/n]: ${NC})" -n 1 -r
+            echo ""
+            if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+                if ! install_jupyterlab; then
+                    print_error "Cannot proceed without JupyterLab. Please install it manually and run this script again."
+                    exit 1
+                fi
+            else
+                jupyterlab_installed=false
+                print_warning "Skipping JupyterLab installation. You'll need to install it manually: pip install jupyterlab"
+            fi
         fi
     fi
 

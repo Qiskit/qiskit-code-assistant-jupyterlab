@@ -48,10 +48,18 @@ If you don't have an IBM Quantum Premium account, run the Qiskit Code Assistant 
 bash <(curl -fsSL https://raw.githubusercontent.com/Qiskit/qiskit-code-assistant-jupyterlab/main/setup_local.sh)
 ```
 
+For automated/CI setups, use non-interactive mode:
+
+```bash
+bash setup_local.sh --non-interactive
+# Or: bash setup_local.sh -y
+```
+
 This one command will:
 
 - Detect and use `uv` for faster installations (if available)
-- Check and optionally install JupyterLab and the extension
+- Check and optionally install JupyterLab
+- Always upgrade the extension to the latest version
 - Install and configure Ollama
 - Download the Qwen2.5-Coder 14B model (optimized for Qiskit)
 - Set up the JupyterLab extension automatically
