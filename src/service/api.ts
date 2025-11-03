@@ -28,6 +28,7 @@ import {
 
 const AUTH_ERROR_CODES = [401, 403, 422];
 const STREAM_DATA_PREFIX = 'data: ';
+const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB max buffer size to prevent memory issues
 
 async function notifyInvalid(response: Response): Promise<void> {
   if (AUTH_ERROR_CODES.includes(response.status)) {
@@ -215,30 +216,112 @@ export async function postModelPrompt(
 }
 
 // POST /model/{model_id}/prompt
+/**
+ * Helper function to parse and validate a single SSE data line
+ * @param line The trimmed line to parse
+ * @param context Context for error logging (e.g., 'line' or 'final buffer')
+ * @returns Parsed data object or null if invalid
+ */
+function parseSSEDataLine(
+  line: string,
+  context: { buffer?: string } = {}
+): IModelPromptResponse | null {
+  if (!line.startsWith(STREAM_DATA_PREFIX)) {
+    return null;
+  }
+
+  try {
+    const jsonStr = line.substring(STREAM_DATA_PREFIX.length);
+    if (!jsonStr) {
+      return null;
+    }
+
+    const data = JSON.parse(jsonStr);
+
+    // Check if this is an error message from the backend
+    if (data.error) {
+      console.error(`Backend streaming error: ${data.error}`, data);
+      Notification.error(`Qiskit Code Assistant Error:\n${data.error}`, {
+        autoClose: 5000
+      });
+      // Continue streaming despite errors unless it's critical
+      if (data.type !== 'chunk_processing_error') {
+        throw new Error(data.error);
+      }
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    // JSON parsing errors - log with more context
+    console.error(`Error parsing JSON chunk: ${error}`, {
+      line: line.substring(0, 100),
+      ...context
+    });
+    // Re-throw non-parsing errors
+    if (!(error instanceof SyntaxError)) {
+      throw error;
+    }
+    return null;
+  }
+}
+
 export async function* postModelPromptStreaming(
   model_id: string,
-  input: string
+  input: string,
+  signal?: AbortSignal
 ): AsyncGenerator<IModelPromptResponse> {
-  const response = await requestAPIStreaming(`model/${model_id}/prompt`, {
-    method: 'POST',
-    body: JSON.stringify({ input, stream: true })
-  });
+  const response = await requestAPIStreaming(
+    `model/${model_id}/prompt`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ input, stream: true })
+    },
+    signal
+  );
 
+  let buffer = '';
   for await (const chunk of response) {
-    // parse & transform the streaming data chunk
-    const lines = chunk.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.startsWith(STREAM_DATA_PREFIX)) {
-        try {
-          // remove 'data: ' prefix and parse remaining string
-          const data = JSON.parse(line.substring(STREAM_DATA_PREFIX.length));
-          yield data;
-        } catch (error) {
-          // JSON parsing errors
-          console.error(`Error parsing JSON: ${error}`);
-        }
+    // Check if signal was aborted
+    if (signal?.aborted) {
+      console.debug('Stream processing aborted by signal');
+      break;
+    }
+
+    // Accumulate chunks in buffer to handle partial JSON
+    buffer += chunk;
+
+    // Protect against unbounded buffer growth
+    if (buffer.length > MAX_BUFFER_SIZE) {
+      const error = `Stream buffer exceeded maximum size (${MAX_BUFFER_SIZE} bytes)`;
+      console.error(error);
+      Notification.error(`Qiskit Code Assistant Error:\n${error}`, {
+        autoClose: 5000
+      });
+      throw new Error(error);
+    }
+
+    const lines = buffer.split('\n');
+
+    // Keep the last incomplete line in the buffer
+    buffer = lines.pop() || '';
+
+    // Process complete lines
+    for (const line of lines) {
+      const trimmed = line.trim();
+      const data = parseSSEDataLine(trimmed, { buffer });
+      if (data) {
+        yield data;
       }
+    }
+  }
+
+  // Process any remaining data in buffer
+  if (buffer.trim()) {
+    const trimmed = buffer.trim();
+    const data = parseSSEDataLine(trimmed, { buffer: trimmed });
+    if (data) {
+      yield data;
     }
   }
 }
