@@ -251,20 +251,21 @@ class PromptHandler(APIHandler):
         def _on_chunk(chunk: bytes):
             try:
                 if is_openai:
-                    parsed_chunk = parse_streaming_chunk(chunk)
-                    if parsed_chunk:  # Check for valid parsed chunk
-                        response = to_model_prompt_response(parsed_chunk)
-                        self.write(STREAM_DATA_PREFIX + json.dumps(response) + "\n")
-                    else:
-                        # Skip empty or invalid chunks
-                        return
+                    # Parse chunk - returns list of parsed SSE messages
+                    parsed_chunks = parse_streaming_chunk(chunk)
+                    if parsed_chunks:  # Check if we got any valid parsed chunks
+                        for parsed_chunk in parsed_chunks:
+                            # Convert each parsed chunk to our response format
+                            response = to_model_prompt_response(parsed_chunk)
+                            self.write(STREAM_DATA_PREFIX + json.dumps(response) + "\n")
+                        self.flush()
                 else:
                     self.write(chunk)
-                self.flush()
+                    self.flush()
             except Exception as e:
                 # Log error but continue streaming
                 print(f"Error processing chunk: {e}")
-                # Optionally send error to client
+                # Send error to client
                 error_msg = {"error": str(e), "type": "chunk_processing_error"}
                 self.write(STREAM_DATA_PREFIX + json.dumps(error_msg) + "\n")
                 self.flush()
@@ -387,15 +388,37 @@ def to_model_prompt_response(response: dict) -> dict:
     } if response else {}
 
 
-def parse_streaming_chunk(chunk: bytes) -> dict:
-    """Parse streaming chunk with improved error handling"""
+def parse_streaming_chunk(chunk: bytes) -> list:
+    """
+    Parse OpenAI/Ollama SSE streaming chunks.
+    Returns a list of parsed JSON objects (can be multiple per chunk).
+    Handles 'data: [DONE]' termination marker.
+    """
+    results = []
     try:
         chunk_str = chunk.decode("utf-8")
-        if chunk_str.startswith(STREAM_DATA_PREFIX):
-            json_str = chunk_str[len(STREAM_DATA_PREFIX):].strip()
-            if json_str:
-                data = json.loads(json_str)
-                return data
-    except (UnicodeDecodeError, json.JSONDecodeError) as e:
-        print(f"Error parsing streaming chunk: {e}")
-    return None
+        # Split by newlines to handle multiple SSE messages in one chunk
+        lines = chunk_str.strip().split('\n')
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Check for [DONE] marker
+            if line == "data: [DONE]":
+                continue
+
+            # Parse SSE format: "data: {json}"
+            if line.startswith(STREAM_DATA_PREFIX):
+                json_str = line[len(STREAM_DATA_PREFIX):].strip()
+                if json_str and json_str != "[DONE]":
+                    try:
+                        data = json.loads(json_str)
+                        results.append(data)
+                    except json.JSONDecodeError as e:
+                        print(f"Error parsing JSON in line: {line[:100]}... Error: {e}")
+    except UnicodeDecodeError as e:
+        print(f"Error decoding chunk: {e}")
+
+    return results
