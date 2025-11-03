@@ -5,11 +5,4 @@ node_modules
 !/package.json
 package-lock.json
 yarn.lock
-.yarn
-env
-venv
-coverage
-dist
-build
-*.egg-info
 qiskit_code_assistant_jupyterlab
