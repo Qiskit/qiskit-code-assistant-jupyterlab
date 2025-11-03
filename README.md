@@ -16,6 +16,7 @@ for the frontend extension.
 - JupyterLab >= 4.3.0
 - Access to either:
   - An IBM Quantum premium account
+  - A local LLM service (e.g., Ollama with Qiskit models)
   - A service exposing LLMs using OpenAI-compatible API endpoints
 
 ## Install
@@ -25,6 +26,38 @@ To install the extension, execute:
 ```bash
 pip install qiskit_code_assistant_jupyterlab
 ```
+
+## Quick Start
+
+### Option 1: IBM Quantum Cloud (Recommended)
+
+Use IBM's hosted service with a premium account for the best experience:
+
+1. Get your API token from [IBM Quantum](https://quantum.cloud.ibm.com/)
+2. Start JupyterLab: `jupyter lab`
+3. Click the status bar when prompted and enter your API token
+4. Select a model
+
+See [GETTING_STARTED.md](GETTING_STARTED.md) for detailed setup instructions.
+
+### Option 2: Local Setup (For Non-Premium Users)
+
+If you don't have an IBM Quantum Premium account, run the Qiskit Code Assistant entirely on your local machine:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Qiskit/qiskit-code-assistant-jupyterlab/main/setup_local.sh)
+```
+
+This one command will:
+- Detect and use `uv` for faster installations (if available)
+- Check and optionally install JupyterLab and the extension
+- Install and configure Ollama
+- Download the Qwen2.5-Coder 14B model (optimized for Qiskit)
+- Set up the JupyterLab extension automatically
+
+**Note:** Requires Python 3.8+ and 16GB+ RAM for optimal performance. For faster installations, consider installing [uv](https://docs.astral.sh/uv/).
+
+For detailed instructions, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
 
 ## Uninstall
 
@@ -36,7 +69,8 @@ pip uninstall qiskit_code_assistant_jupyterlab
 
 ## Using the Qiskit Code Assistant
 
-For help setting up and using the Qiskit Code Assistant read [GETTING_STARTED](GETTING_STARTED.md).
+- **Local Setup**: See [LOCAL_SETUP.md](LOCAL_SETUP.md) for running models locally with Ollama
+- **Cloud Setup**: See [GETTING_STARTED.md](GETTING_STARTED.md) for using IBM Quantum Cloud
 
 ## Contributing
 
