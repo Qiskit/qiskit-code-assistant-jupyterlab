@@ -60,10 +60,10 @@ The setup script supports multiple models. By default, it uses **Qwen2.5-Coder 1
 
 ### Model Options
 
-| Model                           | Size  | Quality                                             | RAM Required | Command                                          |
-| ------------------------------- | ----- | --------------------------------------------------- | ------------ | ------------------------------------------------ |
-| **Qwen2.5-Coder 14B** (Default) | ~9GB  | Best for code                                       | 16GB+        | `hf.co/Qiskit/qwen2.5-coder-14b-qiskit-GGUF`     |
-| Mistral Small 24B               | ~15GB | Most recent model                                   | 24GB+        | `hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF` |
+| Model                           | Size  | Quality                                               | RAM Required | Command                                          |
+| ------------------------------- | ----- | ----------------------------------------------------- | ------------ | ------------------------------------------------ |
+| **Qwen2.5-Coder 14B** (Default) | ~9GB  | Best for code                                         | 16GB+        | `hf.co/Qiskit/qwen2.5-coder-14b-qiskit-GGUF`     |
+| Mistral Small 24B               | ~15GB | Most recent model                                     | 24GB+        | `hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF` |
 | Granite 3.3 8B                  | ~5GB  | Lightweight option, less accurate for code generation | 8GB+         | `hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF`        |
 
 All models are trained on **Qiskit 2.0+** and optimized for quantum computing code assistance.

@@ -125,7 +125,7 @@ The setup script supports multiple models. By default, it uses **Qwen2.5-Coder 1
 
 All models are trained on **Qiskit 2.0+** and optimized for quantum computing code assistance.
 
-For detailed instructions, see the [Local Setup Guide](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/blob/main/LOCAL_SETUP.md).
+For detailed instructions, see the [Local Setup Guide](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab#local-setup).
 
 ## Using the Extension
 

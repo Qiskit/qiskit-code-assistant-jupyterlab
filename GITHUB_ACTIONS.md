@@ -365,8 +365,8 @@ pip show qiskit-code-assistant-jupyterlab
 
 If you encounter issues with GitHub Actions:
 
-1. Check the [Actions tab](../../actions) for detailed logs
-2. Review the [Issues page](../../issues) for similar problems
+1. Check the [Actions tab](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/actions) for detailed logs
+2. Review the [Issues page](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/issues) for similar problems
 3. Open a new issue with:
    - Workflow run URL
    - Error message
