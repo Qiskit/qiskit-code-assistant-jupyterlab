@@ -49,6 +49,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Qiskit/qiskit-code-assistant
 ```
 
 This one command will:
+
 - Detect and use `uv` for faster installations (if available)
 - Check and optionally install JupyterLab and the extension
 - Install and configure Ollama

@@ -15,6 +15,7 @@ bash setup_local.sh
 ```
 
 That's it! The script will:
+
 - Check and optionally install JupyterLab (if not present)
 - Check and optionally install the Qiskit Code Assistant extension (if not present)
 - Install Ollama (if not already installed)
@@ -32,6 +33,7 @@ That's it! The script will:
 - **Windows Users**: Git Bash (comes with Git for Windows) or WSL recommended
 
 The script will automatically:
+
 - Detect and use `uv` for faster Python package installation (falls back to `pip` if not available)
 - Check for and offer to install JupyterLab (version 4.3.0 or higher)
 - Check for and offer to install `qiskit_code_assistant_jupyterlab` extension
@@ -42,11 +44,11 @@ The setup script supports multiple models. By default, it uses **Qwen2.5-Coder 1
 
 ### Model Options
 
-| Model | Size | Quality | RAM Required | Command |
-|-------|------|---------|--------------|---------|
-| **Qwen2.5-Coder 14B** (Default) | ~9GB | Best for code | 16GB+ | `hf.co/Qiskit/qwen2.5-coder-14b-qiskit-GGUF` |
-| Mistral Small 24B | ~15GB | Most recent model | 24GB+ | `hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF` |
-| Granite 3.3 8B | ~5GB | Lightweight option, not optimal for code generation | 8GB+ | `hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF` |
+| Model                           | Size  | Quality                                             | RAM Required | Command                                          |
+| ------------------------------- | ----- | --------------------------------------------------- | ------------ | ------------------------------------------------ |
+| **Qwen2.5-Coder 14B** (Default) | ~9GB  | Best for code                                       | 16GB+        | `hf.co/Qiskit/qwen2.5-coder-14b-qiskit-GGUF`     |
+| Mistral Small 24B               | ~15GB | Most recent model                                   | 24GB+        | `hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF` |
+| Granite 3.3 8B                  | ~5GB  | Lightweight option, not optimal for code generation | 8GB+         | `hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF`        |
 
 All models are trained on **Qiskit 2.0+** and optimized for quantum computing code assistance.
 
@@ -77,6 +79,7 @@ If you prefer to set up manually or the script doesn't work for your system:
 ### Step 1: Install Ollama
 
 **macOS:**
+
 ```bash
 # Download from https://ollama.com/download
 # Or use Homebrew
@@ -84,11 +87,13 @@ brew install ollama
 ```
 
 **Linux:**
+
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 **Windows:**
+
 ```bash
 # Download the installer from https://ollama.com/download
 # Run the .exe installer
@@ -172,6 +177,7 @@ jupyter lab
 
 **Verify Configuration:**
 After JupyterLab starts:
+
 1. Go to **Settings → Settings Editor**
 2. Search for "Qiskit Code Assistant"
 3. Verify that **serviceUrl** shows `http://localhost:11434`
@@ -191,6 +197,7 @@ Once set up, the Qiskit Code Assistant works just like the cloud version:
 
 1. Open a Jupyter notebook
 2. Start typing Qiskit code:
+
    ```python
    from qiskit import QuantumCircuit
 
@@ -198,6 +205,7 @@ Once set up, the Qiskit Code Assistant works just like the cloud version:
    qc = QuantumCircuit(2)
    qc.h(0)  # Press Alt+. here for suggestions
    ```
+
 3. Press `Alt + .` to get AI-powered completions
 4. Press `Alt + Tab` to accept the suggestion
 
@@ -232,17 +240,20 @@ Recommended settings for the best experience:
 ### Extension Not Working
 
 **Check Ollama is Running:**
+
 ```bash
 curl http://localhost:11434
 # Should return: "Ollama is running"
 ```
 
 **List Available Models:**
+
 ```bash
 ollama list
 ```
 
 **Test the Model:**
+
 ```bash
 # Use the shortened model name created by the setup script
 ollama run qwen2.5-coder-14b-qiskit-GGUF
@@ -284,6 +295,7 @@ The extension automatically detects OpenAI-compatible services (including Ollama
 If the extension still shows `https://qiskit-code-assistant.quantum.ibm.com` after running the setup script:
 
 1. **Verify Configuration Files:**
+
    ```bash
    # Check both possible config locations
    cat ~/.jupyter/lab/user-settings/@qiskit/qiskit-code-assistant-jupyterlab/plugin.jupyterlab-settings
@@ -293,12 +305,14 @@ If the extension still shows `https://qiskit-code-assistant.quantum.ibm.com` aft
    Both should show `"serviceUrl": "http://localhost:11434"`
 
 2. **Restart JupyterLab (Critical):**
+
    - Stop JupyterLab completely (Ctrl+C in the terminal)
    - Wait a few seconds
    - Start it again: `jupyter lab`
    - Do NOT just refresh the browser - you must restart the server
 
 3. **Clear Browser Cache:**
+
    - Hard refresh: Ctrl+Shift+R (Linux/Windows) or Cmd+Shift+R (macOS)
    - Or clear browser cache for the JupyterLab site
 
@@ -309,6 +323,7 @@ If the extension still shows `https://qiskit-code-assistant.quantum.ibm.com` aft
    - The serviceUrl field should show `http://localhost:11434`
 
 **Check Configuration Files:**
+
 ```bash
 # Primary location (scoped)
 cat ~/.jupyter/lab/user-settings/@qiskit/qiskit-code-assistant-jupyterlab/plugin.jupyterlab-settings
@@ -318,6 +333,7 @@ cat ~/.jupyter/lab/user-settings/qiskit-code-assistant-jupyterlab/plugin.jupyter
 ```
 
 **Reset Configuration:**
+
 ```bash
 # Remove both config files
 rm ~/.jupyter/lab/user-settings/@qiskit/qiskit-code-assistant-jupyterlab/plugin.jupyterlab-settings
@@ -328,11 +344,13 @@ rm ~/.jupyter/lab/user-settings/qiskit-code-assistant-jupyterlab/plugin.jupyterl
 ### Performance Issues
 
 **Model Takes Too Long:**
+
 - Try a smaller model (e.g., Granite 3.3 8B instead of Mistral Small 24B)
 - Increase JupyterLab timeout settings
 - Check system resources (RAM, CPU usage)
 
 **Out of Memory:**
+
 ```bash
 # Check Ollama logs
 journalctl -u ollama  # Linux
@@ -343,6 +361,7 @@ ollama pull hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF
 ```
 
 **Completions Not Relevant:**
+
 - Ensure you're using a model trained on Qiskit
 - Check that the system prompt is set correctly
 - Try adjusting temperature and other parameters in the Modelfile
@@ -350,16 +369,19 @@ ollama pull hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF
 ### Common Error Messages
 
 **"Service not reachable"**
+
 - Ollama is not running or not accessible
 - Check: `curl http://localhost:11434`
 - Solution: Start Ollama service
 
 **"Model not found"**
+
 - The model hasn't been downloaded
 - Check: `ollama list`
 - Solution: Run `ollama pull <model_name>`
 
 **"Connection refused"**
+
 - Wrong service URL configured
 - Check your JupyterLab settings
 - Should be: `http://localhost:11434`
@@ -453,6 +475,7 @@ ollama run qwen2.5-coder-14b-qiskit-GGUF   # Better quality, larger model
 ### Data Handling
 
 When running locally:
+
 - No data is sent to IBM or external services
 - All processing happens on your local machine
 - No API tokens or authentication required
@@ -460,15 +483,15 @@ When running locally:
 
 ## Comparison: Local vs Cloud
 
-| Feature | Local Setup | IBM Quantum Cloud |
-|---------|-------------|-------------------|
-| **Cost** | Free | Requires Premium Account |
-| **Privacy** | Complete | Data sent to IBM |
-| **Speed** | Depends on hardware | Consistent |
-| **Internet** | Only for initial download | Required |
-| **Setup** | One-time setup needed | Immediate access |
-| **Model Updates** | Manual | Automatic |
-| **Resources** | Uses your RAM/CPU | Uses IBM infrastructure |
+| Feature           | Local Setup               | IBM Quantum Cloud        |
+| ----------------- | ------------------------- | ------------------------ |
+| **Cost**          | Free                      | Requires Premium Account |
+| **Privacy**       | Complete                  | Data sent to IBM         |
+| **Speed**         | Depends on hardware       | Consistent               |
+| **Internet**      | Only for initial download | Required                 |
+| **Setup**         | One-time setup needed     | Immediate access         |
+| **Model Updates** | Manual                    | Automatic                |
+| **Resources**     | Uses your RAM/CPU         | Uses IBM infrastructure  |
 
 ## Uninstalling
 

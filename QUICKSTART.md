@@ -13,10 +13,12 @@ pip install qiskit_code_assistant_jupyterlab
 ### Option A: IBM Quantum Cloud (Recommended)
 
 **Requirements:**
+
 - IBM Quantum Premium account
 - Internet connection
 
 **Setup:**
+
 1. Get your API token from [IBM Quantum](https://quantum.cloud.ibm.com/)
 2. Start JupyterLab: `jupyter lab`
 3. Click the status bar when prompted
@@ -26,6 +28,7 @@ pip install qiskit_code_assistant_jupyterlab
 See [GETTING_STARTED.md](GETTING_STARTED.md) for detailed cloud setup instructions.
 
 **Advantages:**
+
 - ✅ No local resources needed
 - ✅ Automatic model updates
 - ✅ Consistent performance
@@ -48,6 +51,7 @@ bash setup_local.sh
 ```
 
 **What this does:**
+
 - Detects and uses `uv` for faster installations (if available)
 - Checks and optionally installs JupyterLab (if needed)
 - Checks and optionally installs the extension (if needed)
@@ -57,12 +61,14 @@ bash setup_local.sh
 - Sets up JupyterLab extension automatically
 
 **Requirements:**
+
 - Python 3.8+ with pip installed
 - 16GB+ RAM (8GB+ for lighter models)
 - ~5-20GB disk space (depending on model)
 - macOS, Linux, or Windows (Git Bash/WSL)
 
 **Advantages:**
+
 - ✅ Free and open source
 - ✅ Complete privacy (runs on your machine)
 - ✅ Works offline
@@ -71,6 +77,7 @@ bash setup_local.sh
 ## Step 3: Start Using
 
 1. **Launch JupyterLab:**
+
    ```bash
    jupyter lab
    ```
@@ -78,6 +85,7 @@ bash setup_local.sh
 2. **Create or open a notebook**
 
 3. **Start coding with AI assistance:**
+
    ```python
    from qiskit import QuantumCircuit
 
@@ -96,6 +104,7 @@ bash setup_local.sh
 For the best experience, adjust these JupyterLab settings:
 
 1. **Settings → Inline Completer:**
+
    - Set `showWidget` to `always`
 
 2. **Settings → Code Completion:**
@@ -106,6 +115,7 @@ For the best experience, adjust these JupyterLab settings:
 ### Local Setup Issues
 
 **Model not responding?**
+
 ```bash
 # Check Ollama is running
 curl http://localhost:11434
@@ -122,6 +132,7 @@ ollama run qwen2.5-coder-14b-qiskit-GGUF
 ```
 
 **Extension not found?**
+
 ```bash
 # Check installation
 jupyter labextension list | grep qiskit
@@ -133,6 +144,7 @@ pip install --upgrade qiskit_code_assistant_jupyterlab
 ### Cloud Setup Issues
 
 **"Service not reachable"?**
+
 - Check your API token in Settings → Qiskit Code Assistant
 - Verify internet connection
 - Check IBM Quantum status
@@ -148,11 +160,11 @@ pip install --upgrade qiskit_code_assistant_jupyterlab
 
 Choose based on your available RAM:
 
-| Your RAM | Recommended Model | Command |
-|----------|------------------|---------|
-| **16-20 GB** | **Qwen2.5-Coder 14B** (Default, Recommended) | `bash setup_local.sh` |
-| 24+ GB   | Mistral Small 24B (Highest quality) | `bash setup_local.sh hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF` |
-| 8-12 GB  | Granite 3.3 8B (Limited RAM fallback) | `bash setup_local.sh hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF` |
+| Your RAM     | Recommended Model                            | Command                                                              |
+| ------------ | -------------------------------------------- | -------------------------------------------------------------------- |
+| **16-20 GB** | **Qwen2.5-Coder 14B** (Default, Recommended) | `bash setup_local.sh`                                                |
+| 24+ GB       | Mistral Small 24B (Highest quality)          | `bash setup_local.sh hf.co/Qiskit/mistral-small-3.2-24b-qiskit-GGUF` |
+| 8-12 GB      | Granite 3.3 8B (Limited RAM fallback)        | `bash setup_local.sh hf.co/Qiskit/granite-3.3-8b-qiskit-GGUF`        |
 
 **Note:** For best results, we strongly recommend 16GB+ RAM to use the Qwen2.5-Coder 14B model.
 
