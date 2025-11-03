@@ -181,11 +181,12 @@ export class QiskitInlineCompletionProvider
 
       // Create AbortController for this request
       const abortController = new AbortController();
-      const streamToken = `qiskit-code-assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const streamToken = `qiskit-code-assistant_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
       // Calculate adaptive timeout based on context size
-      const baseTimeout = (this.schema.default as any).timeout || 15000;
-      const contextBonus = Math.min(Math.floor(text.length / 100), 30000);
+      // Base timeout: 30s, plus up to 60s more for large contexts
+      const baseTimeout = (this.schema.default as any).timeout || 30000;
+      const contextBonus = Math.min(Math.floor(text.length / 50), 60000);
       const timeout = baseTimeout + contextBonus;
 
       const timeoutId = setTimeout(() => {

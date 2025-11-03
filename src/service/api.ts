@@ -216,6 +216,56 @@ export async function postModelPrompt(
 }
 
 // POST /model/{model_id}/prompt
+/**
+ * Helper function to parse and validate a single SSE data line
+ * @param line The trimmed line to parse
+ * @param context Context for error logging (e.g., 'line' or 'final buffer')
+ * @returns Parsed data object or null if invalid
+ */
+function parseSSEDataLine(
+  line: string,
+  context: { buffer?: string } = {}
+): IModelPromptResponse | null {
+  if (!line.startsWith(STREAM_DATA_PREFIX)) {
+    return null;
+  }
+
+  try {
+    const jsonStr = line.substring(STREAM_DATA_PREFIX.length);
+    if (!jsonStr) {
+      return null;
+    }
+
+    const data = JSON.parse(jsonStr);
+
+    // Check if this is an error message from the backend
+    if (data.error) {
+      console.error(`Backend streaming error: ${data.error}`, data);
+      Notification.error(`Qiskit Code Assistant Error:\n${data.error}`, {
+        autoClose: 5000
+      });
+      // Continue streaming despite errors unless it's critical
+      if (data.type !== 'chunk_processing_error') {
+        throw new Error(data.error);
+      }
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    // JSON parsing errors - log with more context
+    console.error(`Error parsing JSON chunk: ${error}`, {
+      line: line.substring(0, 100),
+      ...context
+    });
+    // Re-throw non-parsing errors
+    if (!(error instanceof SyntaxError)) {
+      throw error;
+    }
+    return null;
+  }
+}
+
 export async function* postModelPromptStreaming(
   model_id: string,
   input: string,
@@ -259,39 +309,9 @@ export async function* postModelPromptStreaming(
     // Process complete lines
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.startsWith(STREAM_DATA_PREFIX)) {
-        try {
-          // remove 'data: ' prefix and parse remaining string
-          const jsonStr = trimmed.substring(STREAM_DATA_PREFIX.length);
-          if (jsonStr) {
-            const data = JSON.parse(jsonStr);
-
-            // Check if this is an error message from the backend
-            if (data.error) {
-              console.error(`Backend streaming error: ${data.error}`, data);
-              Notification.error(
-                `Qiskit Code Assistant Error:\n${data.error}`,
-                { autoClose: 5000 }
-              );
-              // Continue streaming despite errors unless it's critical
-              if (data.type !== 'chunk_processing_error') {
-                throw new Error(data.error);
-              }
-            } else {
-              yield data;
-            }
-          }
-        } catch (error) {
-          // JSON parsing errors - log with more context
-          console.error(`Error parsing JSON chunk: ${error}`, {
-            line: trimmed,
-            buffer
-          });
-          // Re-throw non-parsing errors
-          if (!(error instanceof SyntaxError)) {
-            throw error;
-          }
-        }
+      const data = parseSSEDataLine(trimmed, { buffer });
+      if (data) {
+        yield data;
       }
     }
   }
@@ -299,33 +319,9 @@ export async function* postModelPromptStreaming(
   // Process any remaining data in buffer
   if (buffer.trim()) {
     const trimmed = buffer.trim();
-    if (trimmed.startsWith(STREAM_DATA_PREFIX)) {
-      try {
-        const jsonStr = trimmed.substring(STREAM_DATA_PREFIX.length);
-        if (jsonStr) {
-          const data = JSON.parse(jsonStr);
-
-          // Check for errors in final chunk too
-          if (data.error) {
-            console.error(`Backend streaming error: ${data.error}`, data);
-            Notification.error(`Qiskit Code Assistant Error:\n${data.error}`, {
-              autoClose: 5000
-            });
-            if (data.type !== 'chunk_processing_error') {
-              throw new Error(data.error);
-            }
-          } else {
-            yield data;
-          }
-        }
-      } catch (error) {
-        console.error(`Error parsing final JSON chunk: ${error}`, {
-          buffer: trimmed
-        });
-        if (!(error instanceof SyntaxError)) {
-          throw error;
-        }
-      }
+    const data = parseSSEDataLine(trimmed, { buffer: trimmed });
+    if (data) {
+      yield data;
     }
   }
 }
