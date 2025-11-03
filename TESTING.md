@@ -180,30 +180,23 @@ expect(results).toHaveLength(2);
 
 This project includes automated testing via GitHub Actions:
 
-#### Test Workflow
+#### Build Workflow
 
-The **[Tests workflow](.github/workflows/test.yml)** runs on every push and pull request:
+The **[Build workflow](.github/workflows/build.yml)** runs on every push and pull request and includes:
 
-- ✅ Runs tests on multiple platforms (Ubuntu, macOS, Windows)
-- ✅ Tests against Node.js 18.x and 20.x
-- ✅ Generates coverage reports
-- ✅ Provides coverage artifacts for download (viewable in Actions tab)
+- ✅ Linting checks (stylelint, prettier, eslint)
+- ✅ Test execution with coverage
+- ✅ Coverage report artifacts (downloadable from Actions tab)
+- ✅ Extension building and packaging
+- ✅ Isolated installation testing
+- ✅ Link checking
 
 **Trigger:** Automatically runs on:
 
 - Push to `main` branch
 - Pull requests to any branch
 
-**Status:** Check the ![Tests](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Tests/badge.svg) badge
-
-#### Build Workflow
-
-The **[Build workflow](.github/workflows/build.yml)** includes:
-
-- Linting checks
-- Test execution with coverage
-- Extension building and packaging
-- Link checking
+**Status:** Check the ![Build](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Build/badge.svg) badge
 
 ### Running Tests Locally Like CI
 
