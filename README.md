@@ -1,7 +1,6 @@
 # Qiskit Code Assistant (Beta) Jupyterlab Extension
 
 [![Build](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Build/badge.svg)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/actions/workflows/build.yml)
-[![Tests](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Tests/badge.svg)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/actions/workflows/test.yml)
 
 A JupyterLab extension for Qiskit Code Assistant
 
