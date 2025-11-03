@@ -114,8 +114,8 @@ Comprehensive end-to-end test of the setup script with Ollama model.
 
 **Duration:**
 
-- First run (no cache): ~35-45 minutes
-- Subsequent runs (cached): ~10-15 minutes
+- First run (no cache): ~10-15 minutes
+- Subsequent runs (cached): ~5-10 minutes
 
 ---
 
