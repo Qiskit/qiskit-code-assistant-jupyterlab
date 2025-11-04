@@ -4,3 +4,4 @@ node_modules
 **/package.json
 !/package.json
 qiskit_code_assistant_jupyterlab
+setup_local.sh
