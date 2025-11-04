@@ -81,21 +81,42 @@ Fast validation tests for the local setup script.
 
 ---
 
-#### 4. `test_setup_script_full`
+#### 4. `check_setup_script_changes`
+
+Lightweight job that checks if `setup_local.sh` was modified.
+
+**Runs:** Always (on every push/PR)
+
+**Platform:** Ubuntu Latest
+
+**Purpose:**
+
+- Uses `dorny/paths-filter` action to detect file changes
+- Outputs `setup_changed` boolean for use by dependent jobs
+- Very fast (~10 seconds) - just checks file modifications
+
+**Duration:** ~10 seconds
+
+---
+
+#### 5. `test_setup_script_full`
 
 Comprehensive end-to-end test of the setup script with Ollama model.
 
 **Runs when:**
 
-- ✅ `setup_local.sh` is modified in a PR/push
+- ✅ `setup_local.sh` is modified in a PR/push (detected by `check_setup_script_changes`)
 - ✅ Manually triggered via workflow dispatch
 - ✅ Weekly on Mondays at 00:00 UTC (scheduled)
 - ✅ Release tags are pushed (e.g., `v0.8.0`)
+
+**Important:** This job uses a **job-level conditional** - it won't start at all unless one of the above conditions is met. This saves CI resources by preventing unnecessary job allocation.
 
 **Platform:** Ubuntu Latest
 
 **Features:**
 
+- **Job-Level Gating:** Entire job is skipped unless conditions are met (not just individual steps)
 - **Model Caching:** Downloads ~9GB Qwen model once, then reuses cached version
 - **Cache Key:** Based on `DEFAULT_MODEL` value in script
 - **Cache Duration:** 7 days (refreshed by weekly runs)
@@ -103,14 +124,13 @@ Comprehensive end-to-end test of the setup script with Ollama model.
 
 **Steps:**
 
-1. Detect if `setup_local.sh` was modified
-2. Set up Python 3.11
-3. Restore Ollama model from cache (or download if not cached)
-4. Install and start Ollama service
-5. Run `setup_local.sh --non-interactive`
-6. Verify model installation
-7. Test model inference with Qiskit code
-8. Verify JupyterLab configuration files
+1. Set up Python 3.11
+2. Restore Ollama model from cache (or download if not cached)
+3. Install and start Ollama service
+4. Run `setup_local.sh --non-interactive`
+5. Verify model installation
+6. Test model inference with Qiskit code
+7. Verify JupyterLab configuration files
 
 **Duration:**
 
@@ -119,7 +139,7 @@ Comprehensive end-to-end test of the setup script with Ollama model.
 
 ---
 
-#### 5. `check_links`
+#### 6. `check_links`
 
 Validates all links in documentation files.
 
@@ -223,6 +243,12 @@ The `test_setup_script_full` job is designed to be expensive but thorough. It ru
 
 ### Resource Optimization
 
+**Change detection** (`check_setup_script_changes`) runs on every PR:
+
+- Ultra-lightweight (~10 seconds)
+- Only checks if `setup_local.sh` was modified
+- Provides output for conditional job execution
+
 **Fast tests** (`test_setup_script`) run on every PR:
 
 - Multi-platform (Ubuntu + macOS)
@@ -232,10 +258,13 @@ The `test_setup_script_full` job is designed to be expensive but thorough. It ru
 
 **Full test** (`test_setup_script_full`) runs conditionally:
 
+- **Job-level gating:** Won't start unless conditions are met (not just skip steps)
 - Single platform (Ubuntu only)
 - Downloads 9GB model (cached)
 - Complete in ~10-45 minutes
 - End-to-end validation
+
+This optimization strategy ensures that expensive integration tests only consume CI resources when necessary, while lightweight checks run on every PR to catch issues early.
 
 ---
 

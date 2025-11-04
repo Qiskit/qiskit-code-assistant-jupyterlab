@@ -151,10 +151,11 @@ jobs:
           pip install --upgrade .
           echo "✓ Extension upgrade works"
 
-  test_setup_script_full:
-    name: Test Full Setup (with Ollama model)
+  check_setup_script_changes:
+    name: Check if setup script changed
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    outputs:
+      setup_changed: ${{ steps.changes.outputs.setup_script }}
     steps:
       - uses: actions/checkout@v4
 
@@ -166,23 +167,26 @@ jobs:
             setup_script:
               - 'setup_local.sh'
 
+  test_setup_script_full:
+    name: Test Full Setup (with Ollama model)
+    needs: check_setup_script_changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Only run if setup script changed, manually triggered, on release tags, or scheduled
+    if: |
+      needs.check_setup_script_changes.outputs.setup_changed == 'true' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Set up Python
-        # Only run if setup script changed, manually triggered, on release tags, or scheduled
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Get Ollama model cache key
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         id: ollama-cache-key
         run: |
           # Cache key based on the default model name in setup_local.sh
@@ -191,11 +195,6 @@ jobs:
           echo "cache-key=ollama-models-$MODEL" >> $GITHUB_OUTPUT
 
       - name: Cache Ollama models
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         uses: actions/cache@v4
         id: ollama-cache
         with:
@@ -205,64 +204,34 @@ jobs:
             ollama-models-
 
       - name: Install Ollama
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 
       - name: Start Ollama service
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         run: |
           ollama serve &
           sleep 5
           curl http://localhost:11434
 
       - name: Run full setup script
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         run: |
           # Run the setup script in non-interactive mode
           # The script will auto-install JupyterLab and pull the model if not cached
           bash setup_local.sh --non-interactive
 
       - name: Verify Ollama model is installed
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         run: |
           ollama list
           # Check that the default model exists
           ollama list | grep -i "qwen2.5-coder-14b-qiskit-GGUF"
 
       - name: Test model inference
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         run: |
           # Quick inference test
           echo "from qiskit import QuantumCircuit" | ollama run qwen2.5-coder-14b-qiskit-GGUF --verbose
           echo "✓ Model inference works"
 
       - name: Verify JupyterLab configuration
-        if: |
-          steps.changes.outputs.setup_script == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'schedule' ||
-          startsWith(github.ref, 'refs/tags/v')
         run: |
           # Check config files were created
           cat ~/.jupyter/lab/user-settings/@qiskit/qiskit-code-assistant-jupyterlab/plugin.jupyterlab-settings
