@@ -103,8 +103,8 @@ export async function checkAndPromptForCredentialSelection(): Promise<boolean> {
     await putCredentialFlags({ has_prompted: true });
 
     if (result.button.label === 'Select Credential') {
-      // Show credential selection dialog - this will refresh models internally
-      await selectCredential();
+      // Show credential selection dropdown directly (skip the choice dialog)
+      await selectCredential(true);
       return true; // Indicate that credential was selected and models already initialized
     } else if (result.button.label === 'Enter Token Manually') {
       // Show manual token entry dialog
@@ -157,8 +157,9 @@ export async function checkAndSelectCredential(): Promise<void> {
 
 /**
  * Show dialog to select a credential from available options
+ * @param skipChoiceDialog - If true, skip the "choose how to authenticate" dialog and go directly to credential selection
  */
-export async function selectCredential(): Promise<void> {
+export async function selectCredential(skipChoiceDialog = false): Promise<void> {
   try {
     const credentialsData = await getCredentials();
     const { credentials, selected_credential, using_env_var } =
@@ -183,29 +184,31 @@ export async function selectCredential(): Promise<void> {
       return;
     }
 
-    // First, ask user if they want to select from file or enter manually
-    const choiceResult = await showDialog({
-      title: 'Select IBM Quantum Credential',
-      body: 'Choose how you want to authenticate:',
-      buttons: [
-        Dialog.okButton({ label: 'Select Credential' }),
-        Dialog.warnButton({ label: 'Enter Token Manually' }),
-        Dialog.cancelButton()
-      ]
-    });
+    // If skipChoiceDialog is false (manual command palette invocation), ask user how to authenticate
+    if (!skipChoiceDialog) {
+      const choiceResult = await showDialog({
+        title: 'Select IBM Quantum Credential',
+        body: 'Choose how you want to authenticate:',
+        buttons: [
+          Dialog.okButton({ label: 'Select Credential' }),
+          Dialog.warnButton({ label: 'Enter Token Manually' }),
+          Dialog.cancelButton()
+        ]
+      });
 
-    if (choiceResult.button.label === 'Enter Token Manually') {
-      // Show manual token entry dialog
-      await updateAPIToken();
-      return;
+      if (choiceResult.button.label === 'Enter Token Manually') {
+        // Show manual token entry dialog
+        await updateAPIToken();
+        return;
+      }
+
+      if (!choiceResult.button.accept) {
+        // User cancelled
+        return;
+      }
     }
 
-    if (!choiceResult.button.accept) {
-      // User cancelled
-      return;
-    }
-
-    // User chose to select from file - show credential dropdown
+    // Show credential dropdown
     // Create items list with indication of currently selected credential
     const items = credentials.map(cred => {
       const isSelected = cred.name === selected_credential;
@@ -230,13 +233,15 @@ export async function selectCredential(): Promise<void> {
         cred => cred.name === selectedName
       );
 
-      if (
-        selectedCredential &&
-        selectedCredential.name !== selected_credential
-      ) {
-        await postSelectCredential(selectedCredential.name);
-        // Refresh models list with new credential (validates the credential)
-        await refreshModelsList();
+      if (selectedCredential) {
+        // Only call API and refresh if credential actually changed
+        if (selectedCredential.name !== selected_credential) {
+          await postSelectCredential(selectedCredential.name);
+          // Refresh models list with new credential (validates the credential)
+          await refreshModelsList();
+        } else {
+          console.debug('Selected same credential, no action needed');
+        }
       }
     }
   } catch (error) {

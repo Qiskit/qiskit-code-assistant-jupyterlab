@@ -188,25 +188,22 @@ def init_token():
         if runtime_configs["selected_credential"] and runtime_configs["selected_credential"] in credentials:
             token = credentials[runtime_configs["selected_credential"]].get("token")
         else:
-            # Fallback: try common credential names first (if they exist),
-            # otherwise use the first available credential.
-            # Users can have any credential names in qiskit-ibm.json.
-            priority_order = ["qiskit-code-assistant", "default-ibm-quantum-platform", "default-ibm-quantum"]
-
-            # First try priority order
-            for cred_name in priority_order:
-                if cred_name in credentials:
-                    token = credentials[cred_name].get("token")
-                    runtime_configs["selected_credential"] = cred_name
-                    print(f"Auto-selected credential from priority order: {cred_name}")
-                    break
-
-            # If none of the priority names exist, use the first available credential
-            if not token and credentials:
-                first_cred_name = next(iter(credentials.keys()))
-                token = credentials[first_cred_name].get("token")
-                runtime_configs["selected_credential"] = first_cred_name
-                print(f"Auto-selected first available credential: {first_cred_name}")
+            # Only auto-select if there's exactly one credential
+            # If multiple credentials exist, leave token empty so frontend can prompt user
+            if len(credentials) == 1:
+                # Auto-select the only credential
+                single_cred_name = next(iter(credentials.keys()))
+                token = credentials[single_cred_name].get("token")
+                runtime_configs["selected_credential"] = single_cred_name
+                print(f"Auto-selected single credential: {single_cred_name}")
+            elif len(credentials) > 1:
+                # Multiple credentials exist - don't auto-select, let frontend prompt user
+                print(f"Found {len(credentials)} credentials, waiting for user selection")
+                token = None
+            else:
+                # No credentials
+                print("No credentials found in qiskit-ibm.json")
+                token = None
 
     runtime_configs["api_token"] = token
 
