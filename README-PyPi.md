@@ -73,6 +73,10 @@ By default, the model you will use is `mistral-small-3.2-24b-qiskit`. It will ap
 
 The first time you use the `mistral-small-3.2-24b-qiskit` model, a model disclaimer/EULA will appear with information about the model and links to documentation and the model's license. It will also list some restrictions that you should be aware of when using the model, including a restriction against using proprietary code. Clicking `Accept` will enable the new model during code generation.
 
+#### Managing Multiple Credentials
+
+If you have multiple IBM Quantum credentials configured in your `~/.qiskit/qiskit-ibm.json` file (e.g., for different environments like production and development), the extension will automatically prompt you to select which credential to use when it starts. You can choose to select one from the file, enter a token manually, or dismiss the prompt to use automatic selection. See [docs/credential_selection.md](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/blob/main/docs/credential_selection.md) for detailed instructions.
+
 ### Option 2: Local Setup (For Non-Premium Users)
 
 If you don't have an IBM Quantum Premium Plan account, you can run the Qiskit Code Assistant entirely on your local machine using open-source models.

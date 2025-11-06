@@ -51,15 +51,18 @@ export class StatusBarWidget extends Widget {
   /**
    * Updates the statusbar
    */
-  refreshStatusBar(): void {
+  async refreshStatusBar(): Promise<void> {
     const curentModel = getCurrentModel();
+    const tooltipSuffix = 'Click to change the model';
 
     if (curentModel) {
       this._statusBar.innerHTML =
         'Qiskit Code Assistant: ' + curentModel.display_name;
+      this._statusBar.title = tooltipSuffix;
       this.removeClass('jp-qiskit-code-assistant-statusbar-warn');
     } else {
       this._statusBar.innerHTML = 'Qiskit Code Assistant: No Model Selected';
+      this._statusBar.title = 'No model selected. Click to select a model.';
       this.addClass('jp-qiskit-code-assistant-statusbar-warn');
     }
   }
