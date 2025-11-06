@@ -23,6 +23,9 @@ import { ICompletionReturn, IModelPromptResponse } from '../utils/schema';
 
 export const CHAR_LIMIT = 4_000;
 
+// Track active non-streaming requests to prevent concurrent calls
+let activeRequestController: AbortController | null = null;
+
 function getGeneratedText(json: any): string {
   return json?.generated_text ?? json?.results[0].generated_text ?? '';
 }
@@ -75,6 +78,18 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
     input: ''
   };
 
+  // Cancel any previous in-flight request
+  if (activeRequestController) {
+    console.debug('Cancelling previous non-streaming request before starting new one');
+    activeRequestController.abort();
+    // Clean up the loading status from the cancelled request
+    StatusBarWidget.widget.stopLoadingStatus();
+  }
+
+  // Create new AbortController for this request
+  const requestController = new AbortController();
+  activeRequestController = requestController;
+
   return await checkAPIToken()
     .then(async () => {
       const startingOffset = Math.max(0, text.length - CHAR_LIMIT);
@@ -98,12 +113,21 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
       }
     })
     .catch(reason => {
-      console.error('Failed to send prompt', reason);
+      // Don't log errors for aborted requests
+      if (reason instanceof Error && reason.name === 'AbortError') {
+        console.debug('Non-streaming request was cancelled');
+      } else {
+        console.error('Failed to send prompt', reason);
+      }
       return emptyReturn;
     })
     .finally(() => {
-      // Remove loading icon from status bar
-      StatusBarWidget.widget.stopLoadingStatus();
+      // Only clean up if this is still the active request
+      if (activeRequestController === requestController) {
+        activeRequestController = null;
+        // Remove loading icon from status bar
+        StatusBarWidget.widget.stopLoadingStatus();
+      }
     });
 }
 
