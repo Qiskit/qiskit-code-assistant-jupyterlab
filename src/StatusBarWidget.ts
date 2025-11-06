@@ -69,7 +69,8 @@ export class StatusBarWidget extends Widget {
     this._activeRequestCount++;
     // Only add spinner if this is the first active request
     if (this._activeRequestCount === 1) {
-      this._statusBar.innerHTML = this._statusBar.innerHTML + refreshIcon.svgstr;
+      this._statusBar.innerHTML =
+        this._statusBar.innerHTML + refreshIcon.svgstr;
     }
   }
 

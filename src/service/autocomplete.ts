@@ -81,7 +81,9 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
 
   // Cancel any previous in-flight request
   if (activeRequestController) {
-    console.debug('Cancelling previous non-streaming request before starting new one');
+    console.debug(
+      'Cancelling previous non-streaming request before starting new one'
+    );
     activeRequestController.abort();
     // Clean up the loading status from the cancelled request
     StatusBarWidget.widget.stopLoadingStatus();
@@ -101,11 +103,19 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
         console.error('Failed to send prompt', 'No model selected');
         return emptyReturn;
       } else if (model.disclaimer?.accepted) {
-        return await promptPromise(model._id, requestText, requestController.signal);
+        return await promptPromise(
+          model._id,
+          requestText,
+          requestController.signal
+        );
       } else {
         return await showDisclaimer(model._id).then(async accepted => {
           if (accepted) {
-            return await promptPromise(model._id, requestText, requestController.signal);
+            return await promptPromise(
+              model._id,
+              requestText,
+              requestController.signal
+            );
           } else {
             console.error('Disclaimer not accepted');
             return emptyReturn;
