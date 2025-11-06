@@ -121,12 +121,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     // Proactively check for multiple credentials and prompt user to select
     // Returns true if user selected a credential (which already called refreshModelsList)
-    const credentialWasSelected = await checkAndPromptForCredentialSelection().catch(
-      reason => {
+    const credentialWasSelected =
+      await checkAndPromptForCredentialSelection().catch(reason => {
         console.debug('Credential selection check skipped:', reason);
         return false;
-      }
-    );
+      });
 
     // Only refresh models if they weren't already refreshed during credential selection
     if (!credentialWasSelected) {

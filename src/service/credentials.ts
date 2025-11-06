@@ -46,7 +46,9 @@ export async function checkAndPromptForCredentialSelection(): Promise<boolean> {
 
     // Skip if user chose "Don't Ask Again" globally
     if (never_prompt) {
-      console.debug('User chose "Don\'t Ask Again", skipping credential prompt');
+      console.debug(
+        'User chose "Don\'t Ask Again", skipping credential prompt'
+      );
       return false;
     }
 
@@ -159,11 +161,12 @@ export async function checkAndSelectCredential(): Promise<void> {
  * Show dialog to select a credential from available options
  * @param skipChoiceDialog - If true, skip the "choose how to authenticate" dialog and go directly to credential selection
  */
-export async function selectCredential(skipChoiceDialog = false): Promise<void> {
+export async function selectCredential(
+  skipChoiceDialog = false
+): Promise<void> {
   try {
     const credentialsData = await getCredentials();
-    const { credentials, selected_credential, using_env_var } =
-      credentialsData;
+    const { credentials, selected_credential, using_env_var } = credentialsData;
 
     // Warn if environment variable is overriding credential selection
     if (using_env_var) {
@@ -257,7 +260,7 @@ export async function selectCredential(skipChoiceDialog = false): Promise<void> 
 export async function clearCredentialSelection(): Promise<void> {
   try {
     const credentialsData = await getCredentials();
-    const {selected_credential, using_env_var, never_prompt, has_prompted} =
+    const { selected_credential, using_env_var, never_prompt, has_prompted } =
       credentialsData;
 
     // Warn if environment variable is set
@@ -283,7 +286,7 @@ export async function clearCredentialSelection(): Promise<void> {
     // Confirm with user using a warning dialog
     const result = await showDialog({
       title: 'Reset Credential Selection',
-      body: `This will reset your credential selection and clear all related preferences. You'll be prompted to choose a new credential immediately.\n\nAre you sure?`,
+      body: "This will reset your credential selection and clear all related preferences. You'll be prompted to choose a new credential immediately.\n\nAre you sure?",
       buttons: [
         Dialog.cancelButton({ label: 'Cancel' }),
         Dialog.warnButton({ label: 'Reset' })

@@ -78,12 +78,14 @@ You can name your credentials **anything you want**. For example:
 If you set `QISKIT_IBM_TOKEN` as an environment variable, it will **always** be used instead of credentials from the file.
 
 When this happens:
+
 - If you try to select a credential, you'll see a warning explaining the override
 - To use file-based credentials, unset the environment variable and restart JupyterLab
 
 ## Manual Token Entry
 
 If you use "Set IBM Quantum API token" from the command palette:
+
 - Your token is saved as "qiskit-code-assistant" in the credentials file
 - This becomes your selected credential automatically
 
@@ -92,6 +94,7 @@ If you use "Set IBM Quantum API token" from the command palette:
 **Q: I have multiple credentials but don't see the selection dialog**
 
 A: The extension may have already auto-selected one. To change it:
+
 - Use Command Palette → "Qiskit Code Assistant: Select credential"
 
 **Q: My selection keeps resetting**
@@ -111,6 +114,7 @@ A: Yes! You can name your credentials anything. Just make sure the name is a val
 Your credential selection is stored in: `~/.qiskit/qiskit-code-assistant-prefs.json`
 
 This file is created automatically and contains:
+
 ```json
 {
   "selected_credential": "your-chosen-credential-name"

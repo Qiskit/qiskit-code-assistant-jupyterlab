@@ -465,10 +465,9 @@ export async function deleteClearCredentialSelection(): Promise<void> {
   }).then(response => {
     if (response.ok) {
       response.json().then(json => {
-        Notification.info(
-          `Qiskit Code Assistant:\n${json.message}`,
-          { autoClose: 3000 }
-        );
+        Notification.info(`Qiskit Code Assistant:\n${json.message}`, {
+          autoClose: 3000
+        });
         console.debug('Credential selection cleared');
       });
     } else {
