@@ -32,6 +32,7 @@ import { Widget } from '@lumino/widgets';
 
 import { postModelPromptAccept } from './service/api';
 import { autoComplete, autoCompleteStreaming } from './service/autocomplete';
+import { StatusBarWidget } from './StatusBarWidget';
 import { qiskitIcon } from './utils/icons';
 import { ICompletionReturn } from './utils/schema';
 
@@ -277,6 +278,8 @@ export class QiskitInlineCompletionProvider
       }
       // Always cleanup the stream context
       this._streamPromises.delete(token);
+      // Remove loading spinner (handles external cancellation like cell change)
+      StatusBarWidget.widget.stopLoadingStatus();
     }
   }
 
@@ -292,6 +295,8 @@ export class QiskitInlineCompletionProvider
       }
       streamContext.abortController.abort();
       this._streamPromises.delete(token);
+      // Remove loading spinner when explicitly cancelling
+      StatusBarWidget.widget.stopLoadingStatus();
       console.debug(`Cancelled stream: ${token}`);
     }
   }
@@ -300,6 +305,8 @@ export class QiskitInlineCompletionProvider
    * Cancel all active streams
    */
   cancelAllStreams(): void {
+    const count = this._streamPromises.size;
+
     for (const [token, context] of this._streamPromises.entries()) {
       if (context.timeoutId) {
         clearTimeout(context.timeoutId);
@@ -308,6 +315,11 @@ export class QiskitInlineCompletionProvider
       console.debug(`Cancelled stream: ${token}`);
     }
     this._streamPromises.clear();
+
+    // Remove loading spinner for each cancelled stream
+    for (let i = 0; i < count; i++) {
+      StatusBarWidget.widget.stopLoadingStatus();
+    }
   }
 
   async isApplicable(context: ICompletionContext): Promise<boolean> {
