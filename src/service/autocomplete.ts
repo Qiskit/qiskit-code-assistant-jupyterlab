@@ -32,12 +32,13 @@ function getGeneratedText(json: any): string {
 
 async function promptPromise(
   model: string,
-  requestText: string
+  requestText: string,
+  signal?: AbortSignal
 ): Promise<ICompletionReturn> {
   // Show loading icon in status bar
   StatusBarWidget.widget.setLoadingStatus();
 
-  return postModelPrompt(model, requestText).then(
+  return postModelPrompt(model, requestText, signal).then(
     (response: IModelPromptResponse) => {
       const items: string[] = [];
       response.results.map(results => items.push(results.generated_text));
@@ -100,11 +101,11 @@ export async function autoComplete(text: string): Promise<ICompletionReturn> {
         console.error('Failed to send prompt', 'No model selected');
         return emptyReturn;
       } else if (model.disclaimer?.accepted) {
-        return await promptPromise(model._id, requestText);
+        return await promptPromise(model._id, requestText, requestController.signal);
       } else {
         return await showDisclaimer(model._id).then(async accepted => {
           if (accepted) {
-            return await promptPromise(model._id, requestText);
+            return await promptPromise(model._id, requestText, requestController.signal);
           } else {
             console.error('Disclaimer not accepted');
             return emptyReturn;

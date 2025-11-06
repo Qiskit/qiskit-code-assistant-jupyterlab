@@ -193,11 +193,13 @@ export async function postDisclaimerAccept(
 // POST /model/{model_id}/prompt
 export async function postModelPrompt(
   model_id: string,
-  input: string
+  input: string,
+  signal?: AbortSignal
 ): Promise<IModelPromptResponse> {
   return await requestAPI(`model/${model_id}/prompt`, {
     method: 'POST',
-    body: JSON.stringify({ input })
+    body: JSON.stringify({ input }),
+    signal
   }).then(async response => {
     if (response.ok) {
       const promptRes = await response.json();
