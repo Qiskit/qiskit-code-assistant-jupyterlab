@@ -15,15 +15,15 @@ The project uses Jest as the testing framework with TypeScript support. The test
 
 ## Test Coverage
 
-Current test coverage (91 tests across 7 test suites):
+Current test coverage (101 tests across 7 test suites):
 
 | File Category        | Statement Coverage | Branch Coverage | Function Coverage |
 | -------------------- | ------------------ | --------------- | ----------------- |
-| Overall              | 75.56%             | 52.47%          | 82.29%            |
+| Overall              | 79.83%             | 57.03%          | 84.37%            |
 | API Service          | 76.33%             | 64.70%          | 100%              |
 | Autocomplete         | 98.43%             | 85.00%          | 100%              |
-| Completion Providers | 73.72%             | 47.72%          | 83.33%            |
-| Utility Handlers     | 92.68%             | 87.50%          | 100%              |
+| Completion Providers | 89.83%             | 72.72%          | 94.44%            |
+| Utility Handlers     | 97.56%             | 93.75%          | 100%              |
 | Model Handler        | 100%               | 86.36%          | 100%              |
 | Token Service        | 100%               | 100%            | 100%              |
 | Status Bar Widget    | 100%               | 78.57%          | 100%              |

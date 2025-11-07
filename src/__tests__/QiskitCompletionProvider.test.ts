@@ -307,6 +307,43 @@ describe('QiskitInlineCompletionProvider', () => {
       expect(result.items[0].token).toBeDefined();
       expect(provider._streamPromises.size).toBe(1);
     });
+
+    it('should cancel existing streams before starting new one', async () => {
+      mockSettings.composite.enableStreaming = true;
+      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
+
+      // Set up an existing stream
+      const existingController = new AbortController();
+      const abortSpy = jest.spyOn(existingController, 'abort');
+      provider._streamPromises.set('existing-token', {
+        generator: (async function* () {})(),
+        abortController: existingController,
+        timeoutId: undefined
+      });
+
+      async function* mockGenerator() {
+        yield { items: ['new chunk'], prompt_id: 'p1', input: 'test' };
+      }
+
+      mockAutoCompleteStreaming.mockReturnValue(mockGenerator());
+
+      const request = { text: 'test', offset: 0 } as any;
+      const context = {
+        triggerKind: InlineCompletionTriggerKind.Invoke,
+        widget: {} as any
+      } as any;
+
+      await provider.fetch(request, context);
+
+      // Should have logged cancellation and aborted existing stream
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Cancelling')
+      );
+      expect(abortSpy).toHaveBeenCalled();
+      expect(provider._streamPromises.has('existing-token')).toBe(false);
+
+      consoleDebugSpy.mockRestore();
+    });
   });
 
   describe('stream', () => {
@@ -375,6 +412,150 @@ describe('QiskitInlineCompletionProvider', () => {
       }
 
       expect(mockApp.commands.notifyCommandChanged).toHaveBeenCalled();
+    });
+
+    it('should handle AbortError gracefully', async () => {
+      async function* mockGenerator() {
+        const error = new Error('Aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
+
+      const token = 'test-token';
+      const mockAbortController = new AbortController();
+      provider._streamPromises.set(token, {
+        generator: mockGenerator(),
+        abortController: mockAbortController,
+        timeoutId: undefined
+      });
+
+      const results = [];
+      for await (const chunk of provider.stream(token)) {
+        results.push(chunk);
+      }
+
+      // Should handle error gracefully, no results
+      expect(results).toHaveLength(0);
+      expect(provider._streamPromises.has(token)).toBe(false);
+    });
+
+    it('should handle other errors during streaming', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      async function* mockGenerator() {
+        throw new Error('Network error');
+      }
+
+      const token = 'test-token';
+      const mockAbortController = new AbortController();
+      provider._streamPromises.set(token, {
+        generator: mockGenerator(),
+        abortController: mockAbortController,
+        timeoutId: undefined
+      });
+
+      const results = [];
+      for await (const chunk of provider.stream(token)) {
+        results.push(chunk);
+      }
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error during streaming:',
+        expect.any(Error)
+      );
+      expect(provider._streamPromises.has(token)).toBe(false);
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should clear timeout when stream completes', async () => {
+      const mockChunks = [{ items: ['text'], prompt_id: 'p1', input: 'test' }];
+
+      async function* mockGenerator() {
+        for (const chunk of mockChunks) {
+          yield chunk;
+        }
+      }
+
+      const token = 'test-token';
+      const mockAbortController = new AbortController();
+      const mockTimeoutId = setTimeout(() => {}, 5000) as any;
+      const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+      provider._streamPromises.set(token, {
+        generator: mockGenerator(),
+        abortController: mockAbortController,
+        timeoutId: mockTimeoutId
+      });
+
+      const results = [];
+      for await (const chunk of provider.stream(token)) {
+        results.push(chunk);
+      }
+
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(mockTimeoutId);
+      clearTimeoutSpy.mockRestore();
+      clearTimeout(mockTimeoutId);
+    });
+  });
+
+  describe('cancelStream', () => {
+    it('should cancel a specific stream by token', () => {
+      const token = 'test-token';
+      const mockAbortController = new AbortController();
+      const abortSpy = jest.spyOn(mockAbortController, 'abort');
+      const mockTimeoutId = setTimeout(() => {}, 5000) as any;
+
+      provider._streamPromises.set(token, {
+        generator: (async function* () {})(),
+        abortController: mockAbortController,
+        timeoutId: mockTimeoutId
+      });
+
+      provider.cancelStream(token);
+
+      expect(abortSpy).toHaveBeenCalled();
+      expect(provider._streamPromises.has(token)).toBe(false);
+
+      clearTimeout(mockTimeoutId);
+    });
+
+    it('should do nothing when cancelling non-existent stream', () => {
+      provider.cancelStream('non-existent-token');
+      // Should not throw
+      expect(provider._streamPromises.size).toBe(0);
+    });
+  });
+
+  describe('cancelAllStreams', () => {
+    it('should cancel all active streams', () => {
+      const controller1 = new AbortController();
+      const controller2 = new AbortController();
+      const abortSpy1 = jest.spyOn(controller1, 'abort');
+      const abortSpy2 = jest.spyOn(controller2, 'abort');
+      const timeout1 = setTimeout(() => {}, 5000) as any;
+      const timeout2 = setTimeout(() => {}, 5000) as any;
+
+      provider._streamPromises.set('token1', {
+        generator: (async function* () {})(),
+        abortController: controller1,
+        timeoutId: timeout1
+      });
+
+      provider._streamPromises.set('token2', {
+        generator: (async function* () {})(),
+        abortController: controller2,
+        timeoutId: timeout2
+      });
+
+      provider.cancelAllStreams();
+
+      expect(abortSpy1).toHaveBeenCalled();
+      expect(abortSpy2).toHaveBeenCalled();
+      expect(provider._streamPromises.size).toBe(0);
+
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
     });
   });
 

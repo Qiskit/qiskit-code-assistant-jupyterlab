@@ -216,5 +216,90 @@ describe('Handler Utilities', () => {
         ''
       );
     });
+
+    it('should yield final decoded chunk if present', async () => {
+      // Test the finalChunk path (line 114)
+      // Simulate a scenario where decoder.decode() returns a final chunk
+      const encoder = new TextEncoder();
+      const chunk = encoder.encode('test');
+
+      const mockReader = {
+        read: jest
+          .fn()
+          .mockResolvedValueOnce({ done: false, value: chunk })
+          .mockResolvedValueOnce({ done: true, value: undefined }),
+        releaseLock: jest.fn()
+      };
+
+      const mockResponse = {
+        ok: true,
+        body: {
+          getReader: jest.fn().mockReturnValue(mockReader)
+        }
+      } as any;
+
+      mockMakeRequest.mockResolvedValue(mockResponse);
+
+      const results = [];
+      for await (const chunk of requestAPIStreaming('test')) {
+        results.push(chunk);
+      }
+
+      expect(results.length).toBeGreaterThan(0);
+      expect(mockReader.releaseLock).toHaveBeenCalled();
+    });
+
+    it('should handle AbortError during streaming', async () => {
+      const abortError = new Error('Aborted');
+      abortError.name = 'AbortError';
+
+      const mockReader = {
+        read: jest.fn().mockRejectedValue(abortError),
+        releaseLock: jest.fn()
+      };
+
+      const mockResponse = {
+        ok: true,
+        body: {
+          getReader: jest.fn().mockReturnValue(mockReader)
+        }
+      } as any;
+
+      mockMakeRequest.mockResolvedValue(mockResponse);
+      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
+
+      const generator = requestAPIStreaming('test');
+      await expect(generator.next()).rejects.toThrow('Aborted');
+
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        'Streaming request was aborted'
+      );
+
+      consoleDebugSpy.mockRestore();
+    });
+
+    it('should release lock even when error occurs', async () => {
+      const testError = new Error('Network error');
+
+      const mockReader = {
+        read: jest.fn().mockRejectedValue(testError),
+        releaseLock: jest.fn()
+      };
+
+      const mockResponse = {
+        ok: true,
+        body: {
+          getReader: jest.fn().mockReturnValue(mockReader)
+        }
+      } as any;
+
+      mockMakeRequest.mockResolvedValue(mockResponse);
+
+      const generator = requestAPIStreaming('test');
+      await expect(generator.next()).rejects.toThrow('Network error');
+
+      // Verify releaseLock was called even though error occurred
+      expect(mockReader.releaseLock).toHaveBeenCalled();
+    });
   });
 });
