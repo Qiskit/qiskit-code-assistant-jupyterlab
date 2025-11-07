@@ -16,4 +16,26 @@
 
 export class Widget {
   node: HTMLElement;
+  private _classList: Set<string> = new Set();
+
+  constructor() {
+    this.node = document.createElement('div');
+  }
+
+  addClass(className: string): void {
+    this._classList.add(className);
+    this.node.classList.add(className);
+  }
+
+  removeClass(className: string): void {
+    this._classList.delete(className);
+    this.node.classList.remove(className);
+  }
+
+  hasClass(className: string): boolean {
+    return this._classList.has(className);
+  }
+
+  protected onAfterAttach(msg: any): void {}
+  protected onBeforeDetach(msg: any): void {}
 }

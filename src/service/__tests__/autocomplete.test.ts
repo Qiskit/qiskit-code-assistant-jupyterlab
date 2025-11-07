@@ -34,6 +34,7 @@ jest.mock('../../StatusBarWidget', () => ({
   StatusBarWidget: {
     widget: {
       setLoadingStatus: jest.fn(),
+      stopLoadingStatus: jest.fn(),
       refreshStatusBar: jest.fn()
     }
   }

@@ -304,7 +304,8 @@ describe('API Service', () => {
         {
           method: 'POST',
           body: JSON.stringify({ input: 'test input', stream: true })
-        }
+        },
+        undefined
       );
       expect(results).toHaveLength(2);
       expect(results[0]).toEqual({

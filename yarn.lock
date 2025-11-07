@@ -655,13 +655,13 @@ __metadata:
   linkType: hard
 
 "@codemirror/lint@npm:^6.0.0":
-  version: 6.9.1
-  resolution: "@codemirror/lint@npm:6.9.1"
+  version: 6.9.2
+  resolution: "@codemirror/lint@npm:6.9.2"
   dependencies:
     "@codemirror/state": ^6.0.0
     "@codemirror/view": ^6.35.0
     crelt: ^1.0.5
-  checksum: 49b8360bbfdd07c49d416b190f03663ed948979a69a6dfb24e5ba3392ef3caf00917e40b1a857a58dd76500215275e75f1c87150fefda4cf379cebdce46d0eb0
+  checksum: 20f4113df6c8fb8e9f1d44b32aa6e6d1ecb8d289f77294d5c29c7544a6ed5208bc6709acfd3cfbd09a11245c0c3292706a58cc09cea99926aebe933f8279aac6
   languageName: node
   linkType: hard
 
@@ -2082,21 +2082,21 @@ __metadata:
   linkType: hard
 
 "@lezer/lr@npm:^1.0.0, @lezer/lr@npm:^1.1.0, @lezer/lr@npm:^1.3.0":
-  version: 1.4.2
-  resolution: "@lezer/lr@npm:1.4.2"
+  version: 1.4.3
+  resolution: "@lezer/lr@npm:1.4.3"
   dependencies:
     "@lezer/common": ^1.0.0
-  checksum: 94318ad046c7dfcc8d37e26cb85b99623c39aef60aa51ec2abb30928e7a649f38fa5520f34bd5b356f1db11b6991999589f039e87c8949b0f163be3764f029d8
+  checksum: 6d824c81291ab92778826107e4524ab005259b16350ab797b95bdff7d0e70a90ca9c048806517135a993e1c416594fbb418f8a3d88f9f9a9aff95cbdb4a26de3
   languageName: node
   linkType: hard
 
 "@lezer/markdown@npm:^1.0.0, @lezer/markdown@npm:^1.3.0":
-  version: 1.5.1
-  resolution: "@lezer/markdown@npm:1.5.1"
+  version: 1.6.0
+  resolution: "@lezer/markdown@npm:1.6.0"
   dependencies:
     "@lezer/common": ^1.0.0
     "@lezer/highlight": ^1.0.0
-  checksum: d30f6ab272d2d22538387a927b8f7be14b96c09bd031248d72328ee0a1da502ed7000be4d1f369a26d6906fd2b7940146ea7b3ebcb0bee9e3dad3268471810d2
+  checksum: 7b19215338760908665bb6dcbd0b8d409d2cec14aa4c3a0622f3efec9dbf54bee91b5a82ce24abf400cff5d65566aef8056497e26653782d50c535cc18beb8f1
   languageName: node
   linkType: hard
 
@@ -3640,11 +3640,11 @@ __metadata:
   linkType: hard
 
 "baseline-browser-mapping@npm:^2.8.19":
-  version: 2.8.23
-  resolution: "baseline-browser-mapping@npm:2.8.23"
+  version: 2.8.25
+  resolution: "baseline-browser-mapping@npm:2.8.25"
   bin:
     baseline-browser-mapping: dist/cli.js
-  checksum: 9417720d14a4ed9f646562b65263356f46ff0b9e024f5c9756da2574e57328cf4bcf649faf951538169a203817496a94b380b1efba134019aa4d2f16bc0fcac5
+  checksum: d11bdd2cce30ad96d65f6fdf92cf485152beaf7b1dfc81ad028a94022d702b439dee942984f62c2328c0b6ff468629eb42c2e62ad0ab7d8586b33837b738e560
   languageName: node
   linkType: hard
 
@@ -3818,9 +3818,9 @@ __metadata:
   linkType: hard
 
 "caniuse-lite@npm:^1.0.30001751":
-  version: 1.0.30001753
-  resolution: "caniuse-lite@npm:1.0.30001753"
-  checksum: d38b17895a99bf1ba9f1a8076233e3d4a606cd0121ccdb381ea94c651aaea0e1587ba3922b11dde4eb153b6741ac3e129fc670df0a7251987ed8619f09059b8a
+  version: 1.0.30001754
+  resolution: "caniuse-lite@npm:1.0.30001754"
+  checksum: f5a956d820c6a4de16d0c22eb6bbbbaec346f502f324523311bbbfe4dd8ed0d69ae6034dd96a2f901156f3e4571606670be01f74c8234ac56ea7820383b6aca0
   languageName: node
   linkType: hard
 
@@ -4499,9 +4499,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.238":
-  version: 1.5.244
-  resolution: "electron-to-chromium@npm:1.5.244"
-  checksum: 0ca55077fa97c6a59e571d066bb1483399522d849758d878dd8e6b5ed0324c973da2448beb6cf630c2d700853824a633742158194d1345e6d2a53fa278dc8937
+  version: 1.5.247
+  resolution: "electron-to-chromium@npm:1.5.247"
+  checksum: 2ea1587f29a40bfb81a6796138c3f0c7581c3504a46d78ae5926e088cfdf3d7db2dc0faf17d31d03d2030a43637ff3ce2e47629b091d08811c83cd990a50964d
   languageName: node
   linkType: hard
 
@@ -9416,8 +9416,8 @@ __metadata:
   linkType: hard
 
 "terser@npm:^5.31.1":
-  version: 5.44.0
-  resolution: "terser@npm:5.44.0"
+  version: 5.44.1
+  resolution: "terser@npm:5.44.1"
   dependencies:
     "@jridgewell/source-map": ^0.3.3
     acorn: ^8.15.0
@@ -9425,7 +9425,7 @@ __metadata:
     source-map-support: ~0.5.20
   bin:
     terser: bin/terser
-  checksum: 4e1868d9662ea280dad7b49cfe61b7693187be2b529b31b1f86782db00833c03ba05f2b82fc513d928e937260f2a5fbf42a93724e86eaf55f069288f934ccdb3
+  checksum: 1113c5711bb53127f9886e3c906fde8a93a665b532db9c7e36ff7bf287e032ed48ea0e5a3a1a27f6a27c3c0f934e47e7590fcd15c76b7b7bd44ad751b8a9ede4
   languageName: node
   linkType: hard
 

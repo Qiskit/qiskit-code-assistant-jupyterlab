@@ -18,8 +18,7 @@
     "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,
-    "target": "ES2018",
-    "skipLibCheck": true
+    "target": "ES2018"
   },
   "include": ["src"],
   "exclude": ["src/**/__tests__", "src/**/__mocks__", "node_modules"]

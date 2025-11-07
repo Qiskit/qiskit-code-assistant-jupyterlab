@@ -323,7 +323,12 @@ describe('QiskitInlineCompletionProvider', () => {
       }
 
       const token = 'test-token';
-      provider._streamPromises.set(token, mockGenerator());
+      const mockAbortController = new AbortController();
+      provider._streamPromises.set(token, {
+        generator: mockGenerator(),
+        abortController: mockAbortController,
+        timeoutId: undefined
+      });
 
       const results = [];
       for await (const chunk of provider.stream(token)) {
@@ -357,7 +362,12 @@ describe('QiskitInlineCompletionProvider', () => {
       }
 
       const token = 'test-token';
-      provider._streamPromises.set(token, mockGenerator());
+      const mockAbortController = new AbortController();
+      provider._streamPromises.set(token, {
+        generator: mockGenerator(),
+        abortController: mockAbortController,
+        timeoutId: undefined
+      });
 
       const results = [];
       for await (const chunk of provider.stream(token)) {

@@ -22,5 +22,16 @@ export namespace LabIcon {
 }
 
 export class LabIcon {
-  constructor(options: { name: string; svgstr: string }) {}
+  name: string;
+  svgstr: string;
+
+  constructor(options: { name: string; svgstr: string }) {
+    this.name = options.name;
+    this.svgstr = options.svgstr;
+  }
 }
+
+export const refreshIcon = new LabIcon({
+  name: 'ui-components:refresh',
+  svgstr: '<svg>refresh</svg>'
+});

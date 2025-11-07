@@ -115,7 +115,8 @@ describe('Handler Utilities', () => {
           .fn()
           .mockResolvedValueOnce({ done: false, value: mockChunks[0] })
           .mockResolvedValueOnce({ done: false, value: mockChunks[1] })
-          .mockResolvedValueOnce({ done: true, value: undefined })
+          .mockResolvedValueOnce({ done: true, value: undefined }),
+        releaseLock: jest.fn()
       };
 
       const mockResponse = {
@@ -167,7 +168,8 @@ describe('Handler Utilities', () => {
         read: jest
           .fn()
           .mockResolvedValueOnce({ done: false, value: encoded })
-          .mockResolvedValueOnce({ done: true, value: undefined })
+          .mockResolvedValueOnce({ done: true, value: undefined }),
+        releaseLock: jest.fn()
       };
 
       const mockResponse = {
@@ -190,7 +192,8 @@ describe('Handler Utilities', () => {
 
     it('should use default endpoint when none provided', async () => {
       const mockReader = {
-        read: jest.fn().mockResolvedValue({ done: true, value: undefined })
+        read: jest.fn().mockResolvedValue({ done: true, value: undefined }),
+        releaseLock: jest.fn()
       };
 
       const mockResponse = {
