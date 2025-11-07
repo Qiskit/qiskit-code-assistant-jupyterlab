@@ -10,18 +10,23 @@ The project uses Jest as the testing framework with TypeScript support. The test
 - Autocomplete functionality (both standard and streaming)
 - Completion providers (QiskitCompletionProvider and QiskitInlineCompletionProvider)
 - Utility functions (request handlers)
+- Model and token management
+- Status bar widget
 
 ## Test Coverage
 
-Current test coverage (60 tests):
+Current test coverage (91 tests across 7 test suites):
 
 | File Category        | Statement Coverage | Branch Coverage | Function Coverage |
 | -------------------- | ------------------ | --------------- | ----------------- |
-| Overall              | 67.88%             | 37.01%          | 58.24%            |
-| API Service          | 86.86%             | 80.76%          | 100%              |
-| Autocomplete         | 100%               | 86.11%          | 100%              |
-| Completion Providers | 89.28%             | 65.38%          | 100%              |
-| Utility Handlers     | 100%               | 100%            | 100%              |
+| Overall              | 75.56%             | 52.47%          | 82.29%            |
+| API Service          | 76.33%             | 64.70%          | 100%              |
+| Autocomplete         | 98.43%             | 85.00%          | 100%              |
+| Completion Providers | 73.72%             | 47.72%          | 83.33%            |
+| Utility Handlers     | 92.68%             | 87.50%          | 100%              |
+| Model Handler        | 100%               | 86.36%          | 100%              |
+| Token Service        | 100%               | 100%            | 100%              |
+| Status Bar Widget    | 100%               | 78.57%          | 100%              |
 
 ## Running Tests
 
@@ -85,7 +90,23 @@ describe('MyComponent', () => {
 
 ### Mocking Dependencies
 
-The project includes mocks for JupyterLab components in `src/__mocks__/@jupyterlab/`:
+The project includes comprehensive mocks for JupyterLab and Lumino components in `src/__mocks__/`:
+
+**Available mocks:**
+
+- `@jupyterlab/application` - JupyterFrontEnd, plugins
+- `@jupyterlab/apputils` - Dialogs, notifications
+- `@jupyterlab/completer` - Completion providers and contexts
+- `@jupyterlab/coreutils` - URL utilities
+- `@jupyterlab/notebook` - NotebookPanel
+- `@jupyterlab/services` - ServerConnection
+- `@jupyterlab/settingregistry` - Settings management
+- `@jupyterlab/statusbar` - Status bar components
+- `@jupyterlab/ui-components` - Icons (LabIcon, refreshIcon)
+- `@lumino/widgets` - Widget base class with addClass/removeClass/hasClass
+- `svgMock.ts` - SVG file imports
+
+**Example usage:**
 
 ```typescript
 jest.mock('../../utils/handler');
@@ -95,6 +116,17 @@ const mockFunction = handler.requestAPI as jest.MockedFunction<
 >;
 
 mockFunction.mockResolvedValue(mockResponse);
+```
+
+**Mocking dialogs:**
+
+```typescript
+jest.mock('@jupyterlab/apputils', () => ({
+  InputDialog: {
+    getPassword: jest.fn(),
+    getItem: jest.fn()
+  }
+}));
 ```
 
 ### Testing Async Generators
@@ -146,33 +178,74 @@ expect(results).toHaveLength(2);
 
 ### API Service Tests (`src/service/__tests__/api.test.ts`)
 
-- Tests for all API endpoints
-- Request/response handling
-- Error handling
-- Streaming responses
+Tests for all API endpoints including:
+
+- GET/POST request handling
+- Model and disclaimer endpoints
+- Streaming responses with SSE parsing
+- Error handling and authentication
+- Feedback submission
 
 ### Autocomplete Tests (`src/service/__tests__/autocomplete.test.ts`)
 
+Tests for code completion functionality:
+
 - Standard autocomplete functionality
-- Streaming autocomplete
+- Streaming autocomplete with AbortSignal
 - Token validation
 - Disclaimer handling
-- Input truncation
+- Input truncation (CHAR_LIMIT)
+- Error recovery
 
 ### Completion Provider Tests (`src/__tests__/QiskitCompletionProvider.test.ts`)
 
-- QiskitCompletionProvider
-- QiskitInlineCompletionProvider
-- Fetch operations
-- Acceptance tracking
-- Streaming support
+Tests for JupyterLab completion providers:
+
+- QiskitCompletionProvider (standard completer)
+- QiskitInlineCompletionProvider (inline completer)
+- Fetch operations and streaming
+- Acceptance tracking and prompt management
+- Stream cancellation and timeout handling
+- Context extraction from notebooks
 
 ### Utility Tests (`src/utils/__tests__/handler.test.ts`)
 
+Tests for API request utilities:
+
 - Request API wrapper
-- Streaming request handler
+- Streaming request handler with ReadableStream
 - Error handling
 - URL construction
+- UTF-8 decoding
+
+### Model Handler Tests (`src/service/__tests__/modelHandler.test.ts`)
+
+Tests for model management:
+
+- Getting and setting current model
+- Refreshing models list
+- Model persistence across refreshes
+- Status bar integration
+
+### Token Service Tests (`src/service/__tests__/token.test.ts`)
+
+Tests for API token management:
+
+- Token validation
+- Token update workflow
+- Dialog interactions
+- Model list refresh on token update
+- Error handling for invalid tokens
+
+### Status Bar Widget Tests (`src/__tests__/StatusBarWidget.test.ts`)
+
+Tests for the status bar UI component:
+
+- Widget construction and DOM creation
+- Status bar refresh with model info
+- Loading status indicators
+- Click handler and model selection
+- Event listener lifecycle (attach/detach)
 
 ## Continuous Integration
 
@@ -283,8 +356,80 @@ it('long test', async () => {
 5. **Use descriptive test names**: Clearly indicate what is being tested
 6. **Maintain high coverage**: Aim for >80% coverage on critical paths
 
+## Mock Infrastructure
+
+### Custom Mocks Overview
+
+The project includes custom mock implementations for JupyterLab and Lumino libraries to enable testing without full dependency installation. These mocks are automatically used by Jest through the module name resolution.
+
+#### Lumino Widget Mock
+
+The `@lumino/widgets` mock provides a basic Widget implementation with:
+
+```typescript
+export class Widget {
+  node: HTMLElement;
+  addClass(className: string): void
+  removeClass(className: string): void
+  hasClass(className: string): boolean
+  protected onAfterAttach(msg: any): void
+  protected onBeforeDetach(msg: any): void
+}
+```
+
+This allows testing components that extend Widget without requiring the full Lumino library.
+
+#### JupyterLab UI Components Mock
+
+The `@jupyterlab/ui-components` mock provides LabIcon class and common icons:
+
+```typescript
+export class LabIcon {
+  name: string;
+  svgstr: string;
+  constructor(options: { name: string; svgstr: string })
+}
+
+export const refreshIcon = new LabIcon({
+  name: 'ui-components:refresh',
+  svgstr: '<svg>refresh</svg>'
+});
+```
+
+#### ReadableStream Mocks
+
+When testing streaming functionality, ensure your ReadableStream reader mocks include the `releaseLock` method:
+
+```typescript
+const mockReader = {
+  read: jest.fn()
+    .mockResolvedValueOnce({ done: false, value: chunk1 })
+    .mockResolvedValueOnce({ done: true, value: undefined }),
+  releaseLock: jest.fn()
+};
+```
+
+### Adding New Mocks
+
+When adding tests that require new external dependencies:
+
+1. Create a mock file in `src/__mocks__/@<package-name>/`
+2. Export the minimal interface needed for your tests
+3. Use TypeScript interfaces for type safety
+4. Document the mock in this section
+
+Example:
+
+```typescript
+// src/__mocks__/@jupyterlab/newpackage.ts
+export class NewComponent {
+  // Minimal implementation
+}
+```
+
 ## Additional Resources
 
 - [Jest Documentation](https://jestjs.io/)
 - [ts-jest Documentation](https://kulshekhar.github.io/ts-jest/)
 - [Testing Library](https://testing-library.com/)
+- [JupyterLab Testing Guide](https://jupyterlab.readthedocs.io/en/stable/extension/testing.html)
