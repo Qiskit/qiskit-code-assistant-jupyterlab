@@ -111,7 +111,6 @@ bash setup_local.sh --non-interactive
 For the best experience, adjust these JupyterLab settings:
 
 1. **Settings → Inline Completer:**
-
    - Set `showWidget` to `always`
 
 2. **Settings → Code Completion:**

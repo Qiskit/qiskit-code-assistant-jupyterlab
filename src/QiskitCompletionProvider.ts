@@ -238,10 +238,7 @@ export class QiskitInlineCompletionProvider
 
     // Connect to new notebook
     this._currentNotebook = notebook;
-    notebook.content.activeCellChanged.connect(
-      this._onActiveCellChanged,
-      this
-    );
+    notebook.content.activeCellChanged.connect(this._onActiveCellChanged, this);
 
     // Listen to notebook model content changes (detects completion acceptance)
     if (notebook.content.model) {
