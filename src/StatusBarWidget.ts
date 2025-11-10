@@ -31,6 +31,7 @@ import { checkAPIToken } from './service/token';
 export class StatusBarWidget extends Widget {
   static widget: StatusBarWidget;
   private _statusBar: HTMLElement;
+  private _activeRequestCount: number = 0;
 
   constructor() {
     super();
@@ -65,11 +66,20 @@ export class StatusBarWidget extends Widget {
   }
 
   setLoadingStatus(): void {
-    this._statusBar.innerHTML = this._statusBar.innerHTML + refreshIcon.svgstr;
+    this._activeRequestCount++;
+    // Only add spinner if this is the first active request
+    if (this._activeRequestCount === 1) {
+      this._statusBar.innerHTML =
+        this._statusBar.innerHTML + refreshIcon.svgstr;
+    }
   }
 
   stopLoadingStatus(): void {
-    this.refreshStatusBar();
+    this._activeRequestCount = Math.max(0, this._activeRequestCount - 1);
+    // Only remove spinner when all requests are done
+    if (this._activeRequestCount === 0) {
+      this.refreshStatusBar();
+    }
   }
 
   async onClick() {

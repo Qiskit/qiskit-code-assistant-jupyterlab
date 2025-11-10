@@ -32,6 +32,7 @@ import { Widget } from '@lumino/widgets';
 
 import { postModelPromptAccept } from './service/api';
 import { autoComplete, autoCompleteStreaming } from './service/autocomplete';
+import { StatusBarWidget } from './StatusBarWidget';
 import { qiskitIcon } from './utils/icons';
 import { ICompletionReturn } from './utils/schema';
 
@@ -147,6 +148,9 @@ export class QiskitInlineCompletionProvider
   };
 
   _streamPromises: Map<string, IStreamContext> = new Map();
+  private _currentNotebook: NotebookPanel | null = null;
+  private _boundKeyDown: (e: KeyboardEvent) => void;
+  private _boundFocusOut: (e: FocusEvent) => void;
 
   constructor(options: {
     settings: ISettingRegistry.ISettings;
@@ -154,6 +158,177 @@ export class QiskitInlineCompletionProvider
   }) {
     this.settings = options.settings;
     this.app = options.app;
+
+    // Bind keyboard handler
+    this._boundKeyDown = this._onKeyDown.bind(this);
+    this._boundFocusOut = this._onFocusOut.bind(this);
+
+    // Listen for ESC key to cancel inline completions
+    document.addEventListener('keydown', this._boundKeyDown);
+
+    // Listen for focus loss (clicking outside notebook)
+    document.addEventListener('focusout', this._boundFocusOut);
+
+    // Listen for shell changes (switching between widgets)
+    if (this.app.shell?.currentChanged) {
+      this.app.shell.currentChanged.connect(this._onShellChanged, this);
+    }
+
+    // Set up notebook listener for current widget if it's a notebook
+    const currentWidget = this.app.shell.currentWidget;
+    if (currentWidget instanceof NotebookPanel) {
+      this._setupNotebookListeners(currentWidget);
+    }
+  }
+
+  /**
+   * Handle keyboard events, specifically ESC key to cancel streams
+   */
+  private _onKeyDown(e: KeyboardEvent): void {
+    if (e.key === 'Escape' && this._streamPromises.size > 0) {
+      console.debug(
+        `ESC pressed with ${this._streamPromises.size} active stream(s), cancelling`
+      );
+      this.cancelAllStreams();
+    }
+  }
+
+  /**
+   * Handle focus out events (clicking outside the notebook cell)
+   */
+  private _onFocusOut(_e: FocusEvent): void {
+    // When focus leaves and we have active streams, cancel them
+    // This is intentionally aggressive - better to cancel unnecessarily than to leave spinner
+    if (this._streamPromises.size > 0) {
+      // Small delay to let other more specific handlers fire first
+      // (like activeCellChanged when tabbing between cells)
+      setTimeout(() => {
+        if (this._streamPromises.size > 0) {
+          console.debug(
+            `Focus lost with ${this._streamPromises.size} active stream(s), cancelling`
+          );
+          this.cancelAllStreams();
+        }
+      }, 100);
+    }
+  }
+
+  /**
+   * Set up listeners for notebook panel cell changes
+   */
+  private _setupNotebookListeners(notebook: NotebookPanel): void {
+    if (this._currentNotebook === notebook) {
+      return; // Already set up
+    }
+
+    // Disconnect from old notebook if exists
+    if (this._currentNotebook) {
+      this._currentNotebook.content.activeCellChanged.disconnect(
+        this._onActiveCellChanged,
+        this
+      );
+      // Also disconnect model content changed if it exists
+      if (this._currentNotebook.content.model) {
+        this._currentNotebook.content.model.contentChanged.disconnect(
+          this._onContentChanged,
+          this
+        );
+      }
+    }
+
+    // Connect to new notebook
+    this._currentNotebook = notebook;
+    notebook.content.activeCellChanged.connect(this._onActiveCellChanged, this);
+
+    // Listen to notebook model content changes (detects completion acceptance)
+    if (notebook.content.model) {
+      notebook.content.model.contentChanged.connect(
+        this._onContentChanged,
+        this
+      );
+    }
+  }
+
+  /**
+   * Handle notebook content changes (completion accepted, text edited)
+   */
+  private _onContentChanged(): void {
+    // When content changes, cancel any active streams
+    // This handles cases where completion was accepted or user typed something
+    if (this._streamPromises.size > 0) {
+      console.debug(
+        `Notebook content changed with ${this._streamPromises.size} active stream(s), cancelling`
+      );
+      this.cancelAllStreams();
+    }
+  }
+
+  /**
+   * Handle active cell changes within a notebook
+   */
+  private _onActiveCellChanged(): void {
+    if (this._streamPromises.size > 0) {
+      console.debug(
+        `Active cell changed with ${this._streamPromises.size} active stream(s), cancelling`
+      );
+      this.cancelAllStreams();
+    }
+  }
+
+  /**
+   * Handle shell changes (switching between notebooks, consoles, etc.)
+   */
+  private _onShellChanged(
+    sender: any,
+    args: { newValue: Widget | null; oldValue: Widget | null }
+  ): void {
+    // Cancel any active streams when switching widgets
+    if (this._streamPromises.size > 0) {
+      console.debug(
+        `Shell changed with ${this._streamPromises.size} active stream(s), cancelling`
+      );
+      this.cancelAllStreams();
+    }
+
+    // Set up listeners for new notebook if applicable
+    if (args.newValue instanceof NotebookPanel) {
+      this._setupNotebookListeners(args.newValue);
+    }
+  }
+
+  /**
+   * Dispose of the provider and clean up event listeners
+   */
+  dispose(): void {
+    // Remove keyboard listener
+    document.removeEventListener('keydown', this._boundKeyDown);
+
+    // Remove focus out listener
+    document.removeEventListener('focusout', this._boundFocusOut);
+
+    // Disconnect shell listener
+    if (this.app.shell?.currentChanged) {
+      this.app.shell.currentChanged.disconnect(this._onShellChanged, this);
+    }
+
+    // Disconnect notebook listeners
+    if (this._currentNotebook) {
+      this._currentNotebook.content.activeCellChanged.disconnect(
+        this._onActiveCellChanged,
+        this
+      );
+      // Disconnect content changed listener
+      if (this._currentNotebook.content.model) {
+        this._currentNotebook.content.model.contentChanged.disconnect(
+          this._onContentChanged,
+          this
+        );
+      }
+      this._currentNotebook = null;
+    }
+
+    // Cancel all active streams
+    this.cancelAllStreams();
   }
 
   async fetch(
@@ -253,15 +428,19 @@ export class QiskitInlineCompletionProvider
           textParts.push(newText);
           yield { response: { insertText: textParts.join('') } };
         }
-      }
 
-      // Update prompt info after successful completion
-      if (lastChunk) {
-        this.prompt_id = lastChunk.prompt_id;
-        if (this.prompt_id) {
+        // Update prompt_id immediately on first chunk to handle early cancellation
+        // This ensures accept() has a valid prompt_id even if stream is cancelled
+        if (lastChunk && lastChunk.prompt_id && !this.prompt_id) {
+          this.prompt_id = lastChunk.prompt_id;
           lastPrompt = lastChunk;
           this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
         }
+      }
+
+      // Update lastPrompt with final chunk data if we got more chunks
+      if (lastChunk) {
+        lastPrompt = lastChunk;
       }
     } catch (error) {
       // Handle errors during streaming
@@ -277,6 +456,8 @@ export class QiskitInlineCompletionProvider
       }
       // Always cleanup the stream context
       this._streamPromises.delete(token);
+      // Remove loading spinner (handles external cancellation like cell change)
+      StatusBarWidget.widget.stopLoadingStatus();
     }
   }
 
@@ -292,6 +473,8 @@ export class QiskitInlineCompletionProvider
       }
       streamContext.abortController.abort();
       this._streamPromises.delete(token);
+      // Remove loading spinner when explicitly cancelling
+      StatusBarWidget.widget.stopLoadingStatus();
       console.debug(`Cancelled stream: ${token}`);
     }
   }
@@ -300,6 +483,8 @@ export class QiskitInlineCompletionProvider
    * Cancel all active streams
    */
   cancelAllStreams(): void {
+    const count = this._streamPromises.size;
+
     for (const [token, context] of this._streamPromises.entries()) {
       if (context.timeoutId) {
         clearTimeout(context.timeoutId);
@@ -308,6 +493,11 @@ export class QiskitInlineCompletionProvider
       console.debug(`Cancelled stream: ${token}`);
     }
     this._streamPromises.clear();
+
+    // Remove loading spinner for each cancelled stream
+    for (let i = 0; i < count; i++) {
+      StatusBarWidget.widget.stopLoadingStatus();
+    }
   }
 
   async isApplicable(context: ICompletionContext): Promise<boolean> {
