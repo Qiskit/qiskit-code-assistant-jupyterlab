@@ -194,6 +194,18 @@ describe('API Service', () => {
       expect(mockRequestAPI).toHaveBeenCalledWith('model/model-1');
       expect(result).toEqual(mockModel);
     });
+
+    it('should handle errors when getting a model', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.getModel('invalid-model')).rejects.toThrow('Not Found');
+    });
   });
 
   describe('getModelDisclaimer', () => {
@@ -213,6 +225,21 @@ describe('API Service', () => {
 
       expect(mockRequestAPI).toHaveBeenCalledWith('model/model-1/disclaimer');
       expect(result).toEqual(mockDisclaimer);
+    });
+
+    it('should handle errors when getting model disclaimer', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        json: jest.fn().mockResolvedValue({})
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.getModelDisclaimer('model-1')).rejects.toThrow(
+        'Forbidden'
+      );
     });
   });
 
@@ -235,6 +262,20 @@ describe('API Service', () => {
         }
       );
       expect(result).toEqual({ message: 'Accepted' });
+    });
+
+    it('should handle errors when posting disclaimer acceptance', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: 'Server Error'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(
+        api.postDisclaimerAccept('disclaimer-1', 'model-1')
+      ).rejects.toThrow('Server Error');
     });
   });
 
@@ -365,6 +406,20 @@ describe('API Service', () => {
       );
       expect(result).toEqual({ message: 'Accepted' });
     });
+
+    it('should handle errors when posting prompt acceptance', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.postModelPromptAccept('invalid-prompt')).rejects.toThrow(
+        'Not Found'
+      );
+    });
   });
 
   describe('postFeedback', () => {
@@ -412,6 +467,144 @@ describe('API Service', () => {
       await expect(
         api.postFeedback('model-1', 'prompt-123', true)
       ).rejects.toThrow('Server Error');
+    });
+  });
+
+  describe('getCredentials', () => {
+    it('should successfully get credentials', async () => {
+      const mockCredentials = {
+        credentials: [
+          { name: 'cred1', url: 'url1', token: 'token1' },
+          { name: 'cred2', url: 'url2', token: 'token2' }
+        ],
+        selected_credential: 'cred1',
+        using_env_var: false,
+        never_prompt: false,
+        has_prompted: false
+      };
+      const mockResponse = {
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockCredentials)
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      const result = await api.getCredentials();
+
+      expect(mockRequestAPI).toHaveBeenCalledWith('credentials');
+      expect(result).toEqual(mockCredentials);
+    });
+
+    it('should handle errors when getting credentials', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: 'Server Error'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.getCredentials()).rejects.toThrow('Server Error');
+    });
+  });
+
+  describe('postSelectCredential', () => {
+    it('should successfully select a credential', async () => {
+      const mockResponse = {
+        ok: true,
+        json: jest.fn().mockResolvedValue({ selected_credential: 'cred1' })
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await api.postSelectCredential('cred1');
+
+      expect(mockRequestAPI).toHaveBeenCalledWith('credentials', {
+        method: 'POST',
+        body: JSON.stringify({ credential_name: 'cred1' })
+      });
+    });
+
+    it('should handle errors when selecting a credential', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.postSelectCredential('invalid')).rejects.toThrow(
+        'Not Found'
+      );
+    });
+  });
+
+  describe('putCredentialFlags', () => {
+    it('should successfully update credential flags', async () => {
+      const mockResponse = {
+        ok: true
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await api.putCredentialFlags({
+        never_prompt: true,
+        has_prompted: false
+      });
+
+      expect(mockRequestAPI).toHaveBeenCalledWith('credentials', {
+        method: 'PUT',
+        body: JSON.stringify({
+          never_prompt: true,
+          has_prompted: false
+        })
+      });
+    });
+
+    it('should handle errors when updating credential flags', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(
+        api.putCredentialFlags({ never_prompt: true })
+      ).rejects.toThrow('Bad Request');
+    });
+  });
+
+  describe('deleteClearCredentialSelection', () => {
+    it('should successfully clear credential selection', async () => {
+      const mockResponse = {
+        ok: true,
+        json: jest.fn().mockResolvedValue({ message: 'Selection cleared' })
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await api.deleteClearCredentialSelection();
+
+      expect(mockRequestAPI).toHaveBeenCalledWith('credentials', {
+        method: 'DELETE'
+      });
+    });
+
+    it('should handle errors when clearing credential selection', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: 'Server Error'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.deleteClearCredentialSelection()).rejects.toThrow(
+        'Server Error'
+      );
     });
   });
 });

@@ -16,14 +16,14 @@ The project uses Jest as the testing framework with TypeScript support. The test
 
 ## Test Coverage
 
-Current test coverage (128 tests across 8 test suites):
+Current test coverage (142 tests across 8 test suites):
 
 | File Category        | Statement Coverage | Branch Coverage | Function Coverage |
 | -------------------- | ------------------ | --------------- | ----------------- |
-| Overall              | 74.61%             | 57.25%          | 72.72%            |
-| API Service          | 64.19%             | 55.93%          | 72.22%            |
+| Overall              | 81.38%             | 61.65%          | 80.99%            |
+| API Service          | 88.27%             | 76.27%          | 100%              |
 | Autocomplete         | 93.33%             | 81.25%          | 100%              |
-| Completion Providers | 69.71%             | 46.06%          | 65.38%            |
+| Completion Providers | 74.85%             | 51.68%          | 65.38%            |
 | Credentials          | 91.42%             | 91.07%          | 100%              |
 | Utility Handlers     | 97.56%             | 93.75%          | 100%              |
 | Model Handler        | 100%               | 86.36%          | 100%              |
@@ -386,11 +386,11 @@ The `@lumino/widgets` mock provides a basic Widget implementation with:
 ```typescript
 export class Widget {
   node: HTMLElement;
-  addClass(className: string): void
-  removeClass(className: string): void
-  hasClass(className: string): boolean
-  protected onAfterAttach(msg: any): void
-  protected onBeforeDetach(msg: any): void
+  addClass(className: string): void;
+  removeClass(className: string): void;
+  hasClass(className: string): boolean;
+  protected onAfterAttach(msg: any): void;
+  protected onBeforeDetach(msg: any): void;
 }
 ```
 
@@ -404,7 +404,7 @@ The `@jupyterlab/ui-components` mock provides LabIcon class and common icons:
 export class LabIcon {
   name: string;
   svgstr: string;
-  constructor(options: { name: string; svgstr: string })
+  constructor(options: { name: string; svgstr: string });
 }
 
 export const refreshIcon = new LabIcon({
@@ -419,7 +419,8 @@ When testing streaming functionality, ensure your ReadableStream reader mocks in
 
 ```typescript
 const mockReader = {
-  read: jest.fn()
+  read: jest
+    .fn()
     .mockResolvedValueOnce({ done: false, value: chunk1 })
     .mockResolvedValueOnce({ done: true, value: undefined }),
   releaseLock: jest.fn()

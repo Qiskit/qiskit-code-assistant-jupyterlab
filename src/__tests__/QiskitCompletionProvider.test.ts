@@ -22,6 +22,7 @@ import {
   lastPrompt
 } from '../QiskitCompletionProvider';
 import { InlineCompletionTriggerKind } from '@jupyterlab/completer';
+import { NotebookPanel } from '@jupyterlab/notebook';
 import * as autocomplete from '../service/autocomplete';
 import * as api from '../service/api';
 
@@ -154,27 +155,95 @@ describe('QiskitCompletionProvider', () => {
         }
       ];
 
-      const mockNotebookPanel = {
-        content: {
-          activeCellIndex: 2,
-          widgets: mockCells
-        }
+      // Create a proper NotebookPanel instance using Object.create
+      const mockNotebookPanel = Object.create(NotebookPanel.prototype);
+      mockNotebookPanel.content = {
+        activeCellIndex: 2,
+        widgets: mockCells
       };
 
-      // Create a proper mock that extends NotebookPanel
       const context = {
-        widget: Object.assign(
-          Object.create({ constructor: { name: 'NotebookPanel' } }),
-          mockNotebookPanel
-        )
+        widget: mockNotebookPanel
       } as any;
 
       const request = { text: 'current cell', offset: 0 } as any;
 
       await provider.fetch(request, context);
 
-      // Should aggregate previous cells + current text
-      expect(mockAutoComplete).toHaveBeenCalled();
+      // Verify that cells were aggregated correctly
+      // When cell source is an array, it's joined with newlines
+      expect(mockAutoComplete).toHaveBeenCalledWith(
+        'cell 1 content\ncell 2\n content\ncurrent cell'
+      );
+    });
+
+    it('should skip non-code/markdown cells when aggregating', async () => {
+      const mockResults = {
+        items: ['completion'],
+        prompt_id: 'prompt-123',
+        input: 'aggregated text'
+      };
+      mockAutoComplete.mockResolvedValue(mockResults);
+
+      const mockCells = [
+        {
+          model: {
+            type: 'code',
+            toJSON: () => ({ source: 'code cell' })
+          }
+        },
+        {
+          model: {
+            type: 'raw',
+            toJSON: () => ({ source: 'should be skipped' })
+          }
+        },
+        {
+          model: {
+            type: 'markdown',
+            toJSON: () => ({ source: 'markdown cell' })
+          }
+        }
+      ];
+
+      const mockNotebookPanel = Object.create(NotebookPanel.prototype);
+      mockNotebookPanel.content = {
+        activeCellIndex: 3,
+        widgets: mockCells
+      };
+
+      const context = {
+        widget: mockNotebookPanel
+      } as any;
+
+      const request = { text: 'current', offset: 0 } as any;
+
+      await provider.fetch(request, context);
+
+      // Should only include code and markdown cells, not raw
+      expect(mockAutoComplete).toHaveBeenCalledWith(
+        'code cell\nmarkdown cell\ncurrent'
+      );
+    });
+
+    it('should handle non-notebook widgets', async () => {
+      const mockResults = {
+        items: ['completion'],
+        prompt_id: 'prompt-123',
+        input: 'text'
+      };
+      mockAutoComplete.mockResolvedValue(mockResults);
+
+      const context = {
+        widget: {} // Not a NotebookPanel
+      } as any;
+
+      const request = { text: 'some text', offset: 0 } as any;
+
+      await provider.fetch(request, context);
+
+      // Should just use the text as-is without aggregation
+      expect(mockAutoComplete).toHaveBeenCalledWith('some text');
     });
   });
 
@@ -430,6 +499,7 @@ describe('QiskitInlineCompletionProvider', () => {
     });
 
     it('should handle AbortError gracefully', async () => {
+      // eslint-disable-next-line require-yield
       async function* mockGenerator() {
         const error = new Error('Aborted');
         error.name = 'AbortError';
@@ -457,6 +527,7 @@ describe('QiskitInlineCompletionProvider', () => {
     it('should handle other errors during streaming', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
+      // eslint-disable-next-line require-yield
       async function* mockGenerator() {
         throw new Error('Network error');
       }

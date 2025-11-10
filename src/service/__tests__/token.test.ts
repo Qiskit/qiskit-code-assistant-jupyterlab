@@ -19,7 +19,7 @@ import { checkAPIToken, updateAPIToken } from '../token';
 import * as api from '../api';
 import * as modelHandler from '../modelHandler';
 import * as credentials from '../credentials';
-import { InputDialog, Dialog } from '@jupyterlab/apputils';
+import { InputDialog } from '@jupyterlab/apputils';
 
 // Mock dependencies
 jest.mock('../api');

@@ -24,7 +24,7 @@ import {
 import * as api from '../api';
 import * as modelHandler from '../modelHandler';
 import * as token from '../token';
-import { showDialog, InputDialog, Dialog } from '@jupyterlab/apputils';
+import { showDialog, InputDialog } from '@jupyterlab/apputils';
 
 // Mock dependencies
 jest.mock('../api');
