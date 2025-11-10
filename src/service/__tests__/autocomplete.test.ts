@@ -96,7 +96,11 @@ describe('Autocomplete Service', () => {
 
       const result = await autoComplete('test input');
 
-      expect(mockPostModelPrompt).toHaveBeenCalledWith('model-1', 'test input');
+      expect(mockPostModelPrompt).toHaveBeenCalledWith(
+        'model-1',
+        'test input',
+        expect.anything()
+      );
       expect(result).toEqual({
         items: ['completion 1', 'completion 2'],
         prompt_id: 'prompt-123',

@@ -155,6 +155,63 @@ describe('StatusBarWidget', () => {
       expect(statusBar.innerHTML).not.toContain('<svg>refresh</svg>');
       expect(statusBar.innerHTML).toContain('Test Model 1');
     });
+
+    it('should handle multiple concurrent requests correctly', () => {
+      mockGetCurrentModel.mockReturnValue(mockModels[0]);
+      widget.refreshStatusBar();
+
+      // Start 3 requests
+      widget.setLoadingStatus();
+      widget.setLoadingStatus();
+      widget.setLoadingStatus();
+
+      let statusBar = widget.node.querySelector(
+        '.jp-qiskit-code-assistant-statusbar'
+      ) as HTMLElement;
+
+      // Should only have one spinner
+      const spinnerCount = (statusBar.innerHTML.match(/<svg>/g) || []).length;
+      expect(spinnerCount).toBe(1);
+
+      // Stop first request - spinner should still be there
+      widget.stopLoadingStatus();
+      statusBar = widget.node.querySelector(
+        '.jp-qiskit-code-assistant-statusbar'
+      ) as HTMLElement;
+      expect(statusBar.innerHTML).toContain('<svg>refresh</svg>');
+
+      // Stop second request - spinner should still be there
+      widget.stopLoadingStatus();
+      statusBar = widget.node.querySelector(
+        '.jp-qiskit-code-assistant-statusbar'
+      ) as HTMLElement;
+      expect(statusBar.innerHTML).toContain('<svg>refresh</svg>');
+
+      // Stop third request - spinner should be removed
+      widget.stopLoadingStatus();
+      statusBar = widget.node.querySelector(
+        '.jp-qiskit-code-assistant-statusbar'
+      ) as HTMLElement;
+      expect(statusBar.innerHTML).not.toContain('<svg>refresh</svg>');
+    });
+
+    it('should not go negative on request count', () => {
+      mockGetCurrentModel.mockReturnValue(mockModels[0]);
+      widget.refreshStatusBar();
+
+      // Call stopLoadingStatus without any active requests
+      widget.stopLoadingStatus();
+      widget.stopLoadingStatus();
+
+      // Should not cause any issues
+      widget.setLoadingStatus();
+      const statusBar = widget.node.querySelector(
+        '.jp-qiskit-code-assistant-statusbar'
+      ) as HTMLElement;
+      expect(statusBar.innerHTML).toContain('<svg>refresh</svg>');
+
+      widget.stopLoadingStatus();
+    });
   });
 
   describe('onClick', () => {

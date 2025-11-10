@@ -18,11 +18,13 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { checkAPIToken, updateAPIToken } from '../token';
 import * as api from '../api';
 import * as modelHandler from '../modelHandler';
+import * as credentials from '../credentials';
 import { InputDialog, Dialog } from '@jupyterlab/apputils';
 
 // Mock dependencies
 jest.mock('../api');
 jest.mock('../modelHandler');
+jest.mock('../credentials');
 jest.mock('@jupyterlab/apputils', () => ({
   InputDialog: {
     getPassword: jest.fn()
@@ -43,6 +45,13 @@ const mockRefreshModelsList =
 const mockGetPassword = InputDialog.getPassword as jest.MockedFunction<
   typeof InputDialog.getPassword
 >;
+const mockGetCredentials = api.getCredentials as jest.MockedFunction<
+  typeof api.getCredentials
+>;
+const mockCheckAndSelectCredential =
+  credentials.checkAndSelectCredential as jest.MockedFunction<
+    typeof credentials.checkAndSelectCredential
+  >;
 
 describe('Token Service', () => {
   beforeEach(() => {
@@ -58,8 +67,52 @@ describe('Token Service', () => {
       expect(mockGetAPIToken).toHaveBeenCalled();
     });
 
-    it('should prompt for API token when it does not exist', async () => {
+    it('should prompt for credential selection when multiple credentials exist', async () => {
       mockGetAPIToken.mockResolvedValue(false);
+      mockGetCredentials.mockResolvedValue({
+        credentials: [
+          { name: 'cred1', url: 'url1', token: 'token1' },
+          { name: 'cred2', url: 'url2', token: 'token2' }
+        ],
+        selected_credential: null,
+        using_env_var: false,
+        never_prompt: false,
+        has_prompted: false
+      } as any);
+      mockCheckAndSelectCredential.mockResolvedValue(undefined);
+
+      await checkAPIToken();
+
+      expect(mockGetAPIToken).toHaveBeenCalled();
+      expect(mockGetCredentials).toHaveBeenCalled();
+      expect(mockCheckAndSelectCredential).toHaveBeenCalled();
+    });
+
+    it('should prompt for manual token when no credentials found', async () => {
+      mockGetAPIToken.mockResolvedValue(false);
+      mockGetCredentials.mockRejectedValue(new Error('No credentials'));
+      mockGetPassword.mockResolvedValue({
+        button: { accept: true, label: 'OK' } as any,
+        value: 'test-token'
+      });
+      mockPostApiToken.mockResolvedValue(undefined);
+      mockRefreshModelsList.mockResolvedValue(undefined);
+
+      await checkAPIToken();
+
+      expect(mockGetAPIToken).toHaveBeenCalled();
+      expect(mockGetPassword).toHaveBeenCalled();
+    });
+
+    it('should prompt for manual token when only one credential exists', async () => {
+      mockGetAPIToken.mockResolvedValue(false);
+      mockGetCredentials.mockResolvedValue({
+        credentials: [{ name: 'cred1', url: 'url1', token: 'token1' }],
+        selected_credential: null,
+        using_env_var: false,
+        never_prompt: false,
+        has_prompted: false
+      } as any);
       mockGetPassword.mockResolvedValue({
         button: { accept: true, label: 'OK' } as any,
         value: 'test-token'

@@ -11,22 +11,24 @@ The project uses Jest as the testing framework with TypeScript support. The test
 - Completion providers (QiskitCompletionProvider and QiskitInlineCompletionProvider)
 - Utility functions (request handlers)
 - Model and token management
+- Credential management (multiple IBM Quantum accounts)
 - Status bar widget
 
 ## Test Coverage
 
-Current test coverage (101 tests across 7 test suites):
+Current test coverage (128 tests across 8 test suites):
 
 | File Category        | Statement Coverage | Branch Coverage | Function Coverage |
 | -------------------- | ------------------ | --------------- | ----------------- |
-| Overall              | 79.83%             | 57.03%          | 84.37%            |
-| API Service          | 76.33%             | 64.70%          | 100%              |
-| Autocomplete         | 98.43%             | 85.00%          | 100%              |
-| Completion Providers | 89.83%             | 72.72%          | 94.44%            |
+| Overall              | 74.61%             | 57.25%          | 72.72%            |
+| API Service          | 64.19%             | 55.93%          | 72.22%            |
+| Autocomplete         | 93.33%             | 81.25%          | 100%              |
+| Completion Providers | 69.71%             | 46.06%          | 65.38%            |
+| Credentials          | 91.42%             | 91.07%          | 100%              |
 | Utility Handlers     | 97.56%             | 93.75%          | 100%              |
 | Model Handler        | 100%               | 86.36%          | 100%              |
 | Token Service        | 100%               | 100%            | 100%              |
-| Status Bar Widget    | 100%               | 78.57%          | 100%              |
+| Status Bar Widget    | 100%               | 83.33%          | 100%              |
 
 ## Running Tests
 
@@ -231,11 +233,25 @@ Tests for model management:
 
 Tests for API token management:
 
-- Token validation
-- Token update workflow
+- Token validation and checking
+- Token update workflow with manual entry
+- Multiple credentials detection and routing
 - Dialog interactions
 - Model list refresh on token update
 - Error handling for invalid tokens
+
+### Credentials Service Tests (`src/service/__tests__/credentials.test.ts`)
+
+Tests for multi-credential management:
+
+- Proactive credential selection prompts
+- Environment variable detection
+- Multiple credential handling
+- Single credential auto-selection
+- Credential selection dialog workflow
+- "Don't Ask Again" preference handling
+- Credential clearing and resetting
+- Error handling for API failures
 
 ### Status Bar Widget Tests (`src/__tests__/StatusBarWidget.test.ts`)
 
@@ -243,7 +259,8 @@ Tests for the status bar UI component:
 
 - Widget construction and DOM creation
 - Status bar refresh with model info
-- Loading status indicators
+- Loading status indicators (single and concurrent requests)
+- Request counter management
 - Click handler and model selection
 - Event listener lifecycle (attach/detach)
 

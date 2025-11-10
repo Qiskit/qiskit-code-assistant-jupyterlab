@@ -28,6 +28,15 @@ import * as api from '../service/api';
 // Mock dependencies
 jest.mock('../service/autocomplete');
 jest.mock('../service/api');
+jest.mock('../StatusBarWidget', () => ({
+  StatusBarWidget: {
+    widget: {
+      setLoadingStatus: jest.fn(),
+      stopLoadingStatus: jest.fn(),
+      refreshStatusBar: jest.fn()
+    }
+  }
+}));
 
 const mockAutoComplete = autocomplete.autoComplete as jest.MockedFunction<
   typeof autocomplete.autoComplete
@@ -59,6 +68,9 @@ describe('QiskitCompletionProvider', () => {
     mockApp = {
       commands: {
         notifyCommandChanged: jest.fn()
+      },
+      shell: {
+        currentWidget: null
       }
     };
 
@@ -232,6 +244,9 @@ describe('QiskitInlineCompletionProvider', () => {
     mockApp = {
       commands: {
         notifyCommandChanged: jest.fn()
+      },
+      shell: {
+        currentWidget: null
       }
     };
 
