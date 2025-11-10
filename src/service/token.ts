@@ -16,12 +16,24 @@
 
 import { Dialog, InputDialog } from '@jupyterlab/apputils';
 
-import { getAPIToken, postApiToken } from './api';
+import { getAPIToken, postApiToken, getCredentials } from './api';
+import { checkAndSelectCredential } from './credentials';
 import { refreshModelsList } from './modelHandler';
 
 export async function checkAPIToken(): Promise<void> {
   const apiToken = await getAPIToken();
   if (!apiToken) {
+    // Check if there are multiple credentials available
+    try {
+      const credentialsData = await getCredentials();
+      if (credentialsData.credentials.length > 1) {
+        // Multiple credentials exist, prompt user to select
+        return await checkAndSelectCredential();
+      }
+    } catch (error) {
+      console.debug('No credentials found in config file');
+    }
+    // No credentials or single credential - prompt for manual token entry
     return await updateAPIToken();
   }
 }

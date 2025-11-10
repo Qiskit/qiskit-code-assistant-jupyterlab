@@ -31,6 +31,7 @@ import { checkAPIToken } from './service/token';
 export class StatusBarWidget extends Widget {
   static widget: StatusBarWidget;
   private _statusBar: HTMLElement;
+  private _activeRequestCount: number = 0;
 
   constructor() {
     super();
@@ -51,25 +52,37 @@ export class StatusBarWidget extends Widget {
   /**
    * Updates the statusbar
    */
-  refreshStatusBar(): void {
+  async refreshStatusBar(): Promise<void> {
     const curentModel = getCurrentModel();
+    const tooltipSuffix = 'Click to change the model';
 
     if (curentModel) {
       this._statusBar.innerHTML =
         'Qiskit Code Assistant: ' + curentModel.display_name;
+      this._statusBar.title = tooltipSuffix;
       this.removeClass('jp-qiskit-code-assistant-statusbar-warn');
     } else {
       this._statusBar.innerHTML = 'Qiskit Code Assistant: No Model Selected';
+      this._statusBar.title = 'No model selected. Click to select a model.';
       this.addClass('jp-qiskit-code-assistant-statusbar-warn');
     }
   }
 
   setLoadingStatus(): void {
-    this._statusBar.innerHTML = this._statusBar.innerHTML + refreshIcon.svgstr;
+    this._activeRequestCount++;
+    // Only add spinner if this is the first active request
+    if (this._activeRequestCount === 1) {
+      this._statusBar.innerHTML =
+        this._statusBar.innerHTML + refreshIcon.svgstr;
+    }
   }
 
   stopLoadingStatus(): void {
-    this.refreshStatusBar();
+    this._activeRequestCount = Math.max(0, this._activeRequestCount - 1);
+    // Only remove spinner when all requests are done
+    if (this._activeRequestCount === 0) {
+      this.refreshStatusBar();
+    }
   }
 
   async onClick() {

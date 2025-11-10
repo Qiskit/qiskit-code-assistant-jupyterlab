@@ -32,6 +32,11 @@ import {
   wipeLastPrompt
 } from './QiskitCompletionProvider';
 import { postServiceUrl } from './service/api';
+import {
+  selectCredential,
+  checkAndPromptForCredentialSelection,
+  clearCredentialSelection
+} from './service/credentials';
 import { getFeedbackStatusBarWidget, getFeedback } from './service/feedback';
 import { refreshModelsList } from './service/modelHandler';
 import { updateAPIToken } from './service/token';
@@ -44,6 +49,8 @@ namespace CommandIDs {
   export const selectCompleterNotebook = 'completer:select-notebook';
   export const selectCompleterFile = 'completer:select-file';
   export const updateApiToken = 'qiskit-code-assistant:set-api-token';
+  export const selectCredential = 'qiskit-code-assistant:select-credential';
+  export const clearCredential = 'qiskit-code-assistant:clear-credential';
   export const promptFeedback = 'qiskit-code-assistant:prompt-feedback';
 }
 
@@ -112,9 +119,20 @@ const plugin: JupyterFrontEndPlugin<void> = {
       align: 'left'
     });
 
-    await refreshModelsList().catch(reason => {
-      console.error('Failed initial load of models list', reason);
-    });
+    // Proactively check for multiple credentials and prompt user to select
+    // Returns true if user selected a credential (which already called refreshModelsList)
+    const credentialWasSelected =
+      await checkAndPromptForCredentialSelection().catch(reason => {
+        console.debug('Credential selection check skipped:', reason);
+        return false;
+      });
+
+    // Only refresh models if they weren't already refreshed during credential selection
+    if (!credentialWasSelected) {
+      await refreshModelsList().catch(reason => {
+        console.error('Failed initial load of models list', reason);
+      });
+    }
 
     app.commands.addCommand(CommandIDs.promptFeedback, {
       label: 'Give feedback for the Qiskit Code Assistant',
@@ -134,8 +152,28 @@ const plugin: JupyterFrontEndPlugin<void> = {
       execute: () => updateAPIToken()
     });
 
+    app.commands.addCommand(CommandIDs.selectCredential, {
+      label: 'Qiskit Code Assistant: Select credential',
+      execute: () => selectCredential()
+    });
+
+    app.commands.addCommand(CommandIDs.clearCredential, {
+      label: 'Qiskit Code Assistant: Clear credential selection',
+      execute: () => clearCredentialSelection()
+    });
+
     palette.addItem({
       command: CommandIDs.updateApiToken,
+      category: 'Qiskit Code Assistant'
+    });
+
+    palette.addItem({
+      command: CommandIDs.selectCredential,
+      category: 'Qiskit Code Assistant'
+    });
+
+    palette.addItem({
+      command: CommandIDs.clearCredential,
       category: 'Qiskit Code Assistant'
     });
 

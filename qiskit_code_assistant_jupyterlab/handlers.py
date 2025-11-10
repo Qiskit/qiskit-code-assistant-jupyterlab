@@ -33,35 +33,182 @@ runtime_configs = {
     "service_url": "http://localhost",
     "api_token": "",
     "is_openai": False,
+    "selected_credential": None,
+    "using_env_var": False,  # Track if env var is overriding selection
 }
 
 
 def update_token(token):
     if token:
         runtime_configs["api_token"] = token
-        QiskitRuntimeService.save_account(
-            channel="ibm_quantum",
-            name="qiskit-code-assistant",
-            token=token,
-            overwrite=True,
-        )
+        # When manually setting token, update selected credential to match
+        runtime_configs["selected_credential"] = "qiskit-code-assistant"
+        # Save to both qiskit-ibm.json and preferences
+        try:
+            QiskitRuntimeService.save_account(
+                channel="ibm_quantum_platform",
+                name="qiskit-code-assistant",
+                token=token,
+                overwrite=True,
+            )
+            save_selected_credential("qiskit-code-assistant")
+            print("Manually entered token saved as 'qiskit-code-assistant' credential")
+        except Exception as e:
+            print(f"Error saving token: {e}")
+            # Still keep the token in runtime_configs so it can be used this session
+            # Even if saving to file fails
+
+
+def get_preference_file_path():
+    """Get path to the code assistant preference file."""
+    return Path.home() / ".qiskit" / "qiskit-code-assistant-prefs.json"
+
+
+def load_preferences():
+    """Load all preferences from preference file."""
+    pref_file = get_preference_file_path()
+    if not os.path.exists(pref_file):
+        return {}
+
+    try:
+        with open(pref_file) as f:
+            prefs = json.load(f)
+        return prefs
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error reading preference file: {e}")
+        return {}
+
+
+def load_selected_credential():
+    """Load the previously selected credential from preference file."""
+    prefs = load_preferences()
+    return prefs.get("selected_credential")
+
+
+def save_preferences(updates):
+    """Save preferences to file. updates is a dict of key-value pairs to update."""
+    pref_file = get_preference_file_path()
+
+    # Ensure .qiskit directory exists
+    pref_file.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Load existing preferences
+        prefs = load_preferences()
+
+        # Update with new values
+        prefs.update(updates)
+
+        # Save back to file
+        with open(pref_file, "w") as f:
+            json.dump(prefs, f, indent=2)
+
+        print(f"Saved preferences: {updates}")
+    except IOError as e:
+        print(f"Error saving preference file: {e}")
+
+
+def save_selected_credential(credential_name):
+    """Save the selected credential to preference file for persistence."""
+    save_preferences({"selected_credential": credential_name})
+
+
+def get_never_prompt_flag():
+    """Get the global 'never prompt' flag."""
+    prefs = load_preferences()
+    return prefs.get("never_prompt_credential_selection", False)
+
+
+def set_never_prompt_flag(value):
+    """Set the global 'never prompt' flag."""
+    save_preferences({"never_prompt_credential_selection": value})
+
+
+def get_has_prompted_flag():
+    """Get the 'has prompted in this session' flag."""
+    prefs = load_preferences()
+    return prefs.get("has_prompted_credential_selection", False)
+
+
+def set_has_prompted_flag(value):
+    """Set the 'has prompted in this session' flag."""
+    save_preferences({"has_prompted_credential_selection": value})
+
+
+def get_credentials_from_config():
+    """
+    Read all credentials from qiskit-ibm.json file.
+    Returns a dict of {credential_name: credential_data}
+
+    Users can have credentials with ANY names in their qiskit-ibm.json file.
+    Common examples include:
+    - "qiskit-code-assistant"
+    - "default-ibm-quantum-platform"
+    - "default-ibm-quantum"
+    - "my-work-account"
+    - "personal-account"
+    Or any other custom name they choose.
+    """
+    path = Path.home() / ".qiskit" / "qiskit-ibm.json"
+
+    if not os.path.exists(path):
+        return {}
+
+    try:
+        with open(path) as f:
+            config = json.load(f)
+
+        # Filter out entries that have tokens
+        # This returns ALL credential entries regardless of their names
+        # Only include credentials with non-empty tokens
+        credentials = {
+            name: data for name, data in config.items()
+            if isinstance(data, dict) and data.get("token", "").strip()
+        }
+        return credentials
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error reading credentials file: {e}")
+        return {}
 
 
 def init_token():
     token = os.environ.get("QISKIT_IBM_TOKEN")
 
-    path = Path.home() / ".qiskit" / "qiskit-ibm.json"
+    if token:
+        # Environment variable takes precedence
+        runtime_configs["using_env_var"] = True
+        print("Using token from QISKIT_IBM_TOKEN environment variable")
+    else:
+        runtime_configs["using_env_var"] = False
+        credentials = get_credentials_from_config()
 
-    if not token and os.path.exists(path):
-        with open(path) as f:
-            config = json.load(f)
-        token = config.get("qiskit-code-assistant", {}).get("token")
+        # Try to restore previously selected credential from preferences
+        if not runtime_configs["selected_credential"]:
+            saved_credential = load_selected_credential()
+            if saved_credential and saved_credential in credentials:
+                runtime_configs["selected_credential"] = saved_credential
+                print(f"Restored previously selected credential: {saved_credential}")
 
-        if not token:
-            token = config.get("default-ibm-quantum-platform", {}).get("token", "")
-
-        if not token:
-            token = config.get("default-ibm-quantum", {}).get("token", "")
+        # If a specific credential is selected, use it
+        if runtime_configs["selected_credential"] and runtime_configs["selected_credential"] in credentials:
+            token = credentials[runtime_configs["selected_credential"]].get("token")
+        else:
+            # Only auto-select if there's exactly one credential
+            # If multiple credentials exist, leave token empty so frontend can prompt user
+            if len(credentials) == 1:
+                # Auto-select the only credential
+                single_cred_name = next(iter(credentials.keys()))
+                token = credentials[single_cred_name].get("token")
+                runtime_configs["selected_credential"] = single_cred_name
+                print(f"Auto-selected single credential: {single_cred_name}")
+            elif len(credentials) > 1:
+                # Multiple credentials exist - don't auto-select, let frontend prompt user
+                print(f"Found {len(credentials)} credentials, waiting for user selection")
+                token = None
+            else:
+                # No credentials
+                print("No credentials found in qiskit-ibm.json")
+                token = None
 
     runtime_configs["api_token"] = token
 
@@ -330,6 +477,117 @@ class FeedbackHandler(APIHandler):
                 self.finish(json.dumps(r.json()))
 
 
+class CredentialsHandler(APIHandler):
+    @tornado.web.authenticated
+    def get(self):
+        """Get list of available credentials from qiskit-ibm.json"""
+        credentials = get_credentials_from_config()
+
+        # Return credential names and selected credential
+        credential_list = [
+            {
+                "name": name,
+                "is_selected": name == runtime_configs["selected_credential"]
+            }
+            for name in credentials.keys()
+        ]
+
+        self.finish(json.dumps({
+            "credentials": credential_list,
+            "selected_credential": runtime_configs["selected_credential"],
+            "using_env_var": runtime_configs.get("using_env_var", False),
+            "never_prompt": get_never_prompt_flag(),
+            "has_prompted": get_has_prompted_flag()
+        }))
+
+    @tornado.web.authenticated
+    def post(self):
+        """Select a credential to use"""
+        json_payload = self.get_json_body()
+        credential_name = json_payload.get("credential_name")
+
+        if not credential_name:
+            self.set_status(400)
+            self.finish(json.dumps({"error": "credential_name is required"}))
+            return
+
+        credentials = get_credentials_from_config()
+
+        if credential_name not in credentials:
+            self.set_status(404)
+            self.finish(json.dumps({"error": f"Credential '{credential_name}' not found"}))
+            return
+
+        # Validate that the credential has a token
+        token = credentials[credential_name].get("token")
+        if not token:
+            self.set_status(400)
+            self.finish(json.dumps({"error": f"Credential '{credential_name}' has no token"}))
+            return
+
+        # Set the selected credential and update token
+        runtime_configs["selected_credential"] = credential_name
+        runtime_configs["api_token"] = token
+
+        # Save selection to preference file for persistence
+        save_selected_credential(credential_name)
+
+        self.finish(json.dumps({
+            "success": True,
+            "selected_credential": credential_name
+        }))
+
+    @tornado.web.authenticated
+    def put(self):
+        """Update credential state flags (never_prompt, has_prompted)"""
+        json_payload = self.get_json_body()
+
+        updates = {}
+        if "never_prompt" in json_payload:
+            set_never_prompt_flag(json_payload["never_prompt"])
+            updates["never_prompt"] = json_payload["never_prompt"]
+
+        if "has_prompted" in json_payload:
+            set_has_prompted_flag(json_payload["has_prompted"])
+            updates["has_prompted"] = json_payload["has_prompted"]
+
+        if not updates:
+            self.set_status(400)
+            self.finish(json.dumps({"error": "No valid fields to update"}))
+            return
+
+        self.finish(json.dumps({
+            "success": True,
+            "updated": updates
+        }))
+
+    @tornado.web.authenticated
+    def delete(self):
+        """Clear the credential selection and all state flags (reset to default behavior)"""
+        # Clear the runtime selection
+        runtime_configs["selected_credential"] = None
+
+        # Delete the preference file (clears ALL state)
+        pref_file = get_preference_file_path()
+        if os.path.exists(pref_file):
+            try:
+                os.remove(pref_file)
+                print("Cleared all credential preferences and state flags")
+            except IOError as e:
+                print(f"Error deleting preference file: {e}")
+                self.set_status(500)
+                self.finish(json.dumps({"error": f"Failed to delete preference file: {e}"}))
+                return
+
+        # Re-initialize token to use default selection logic
+        init_token()
+
+        self.finish(json.dumps({
+            "success": True,
+            "message": "Credential selection and all preferences have been reset. You'll be prompted again on next restart if multiple credentials exist."
+        }))
+
+
 def setup_handlers(web_app):
     host_pattern = ".*$"
     id_regex = r"(?P<id>[\w\-\_\.\:]+)"  # valid chars: alphanum | "-" | "_" | "." | ":"
@@ -338,6 +596,7 @@ def setup_handlers(web_app):
     handlers = [
         (f"{base_url}/service", ServiceUrlHandler),
         (f"{base_url}/token", TokenHandler),
+        (f"{base_url}/credentials", CredentialsHandler),
         (f"{base_url}/models", ModelsHandler),
         (f"{base_url}/model/{id_regex}", ModelHandler),
         (f"{base_url}/model/{id_regex}/disclaimer", DisclaimerHandler),

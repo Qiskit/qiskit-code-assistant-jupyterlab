@@ -193,11 +193,13 @@ export async function postDisclaimerAccept(
 // POST /model/{model_id}/prompt
 export async function postModelPrompt(
   model_id: string,
-  input: string
+  input: string,
+  signal?: AbortSignal
 ): Promise<IModelPromptResponse> {
   return await requestAPI(`model/${model_id}/prompt`, {
     method: 'POST',
-    body: JSON.stringify({ input })
+    body: JSON.stringify({ input }),
+    signal
   }).then(async response => {
     if (response.ok) {
       const promptRes = await response.json();
@@ -374,6 +376,105 @@ export async function postFeedback(
       notifyInvalid(response);
       console.error(
         'Error sending feedback',
+        response.status,
+        response.statusText
+      );
+      throw Error(response.statusText);
+    }
+  });
+}
+
+// GET /credentials
+export async function getCredentials(): Promise<{
+  credentials: Array<{
+    name: string;
+    is_selected: boolean;
+  }>;
+  selected_credential: string | null;
+  using_env_var: boolean;
+  never_prompt: boolean;
+  has_prompted: boolean;
+}> {
+  return await requestAPI('credentials').then(async response => {
+    if (response.ok) {
+      const json = await response.json();
+      console.debug('credentials list:', json);
+      return json;
+    } else {
+      console.error(
+        'Error getting credentials',
+        response.status,
+        response.statusText
+      );
+      throw Error(response.statusText);
+    }
+  });
+}
+
+// POST /credentials
+export async function postSelectCredential(
+  credentialName: string
+): Promise<void> {
+  return await requestAPI('credentials', {
+    method: 'POST',
+    body: JSON.stringify({ credential_name: credentialName })
+  }).then(response => {
+    if (response.ok) {
+      response.json().then(json => {
+        const msg = `Switched to credential: ${json.selected_credential}`;
+        Notification.info(`Qiskit Code Assistant:\n${msg}`, {
+          autoClose: 3000
+        });
+        console.debug(msg);
+      });
+    } else {
+      console.error(
+        'Error selecting credential',
+        response.status,
+        response.statusText
+      );
+      throw Error(response.statusText);
+    }
+  });
+}
+
+// PUT /credentials - Update state flags
+export async function putCredentialFlags(flags: {
+  never_prompt?: boolean;
+  has_prompted?: boolean;
+}): Promise<void> {
+  return await requestAPI('credentials', {
+    method: 'PUT',
+    body: JSON.stringify(flags)
+  }).then(response => {
+    if (response.ok) {
+      console.debug('Credential flags updated:', flags);
+    } else {
+      console.error(
+        'Error updating credential flags',
+        response.status,
+        response.statusText
+      );
+      throw Error(response.statusText);
+    }
+  });
+}
+
+// DELETE /credentials
+export async function deleteClearCredentialSelection(): Promise<void> {
+  return await requestAPI('credentials', {
+    method: 'DELETE'
+  }).then(response => {
+    if (response.ok) {
+      response.json().then(json => {
+        Notification.info(`Qiskit Code Assistant:\n${json.message}`, {
+          autoClose: 3000
+        });
+        console.debug('Credential selection cleared');
+      });
+    } else {
+      console.error(
+        'Error clearing credential selection',
         response.status,
         response.statusText
       );

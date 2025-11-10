@@ -332,14 +332,12 @@ If the extension still shows `https://qiskit-code-assistant.quantum.ibm.com` aft
    Both should show `"serviceUrl": "http://localhost:11434"`
 
 2. **Restart JupyterLab (Critical):**
-
    - Stop JupyterLab completely (Ctrl+C in the terminal)
    - Wait a few seconds
    - Start it again: `jupyter lab`
    - Do NOT just refresh the browser - you must restart the server
 
 3. **Clear Browser Cache:**
-
    - Hard refresh: Ctrl+Shift+R (Linux/Windows) or Cmd+Shift+R (macOS)
    - Or clear browser cache for the JupyterLab site
 
