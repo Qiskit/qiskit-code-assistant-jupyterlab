@@ -44,14 +44,19 @@ def update_token(token):
         # When manually setting token, update selected credential to match
         runtime_configs["selected_credential"] = "qiskit-code-assistant"
         # Save to both qiskit-ibm.json and preferences
-        QiskitRuntimeService.save_account(
-            channel="ibm_quantum",
-            name="qiskit-code-assistant",
-            token=token,
-            overwrite=True,
-        )
-        save_selected_credential("qiskit-code-assistant")
-        print("Manually entered token saved as 'qiskit-code-assistant' credential")
+        try:
+            QiskitRuntimeService.save_account(
+                channel="ibm_quantum_platform",
+                name="qiskit-code-assistant",
+                token=token,
+                overwrite=True,
+            )
+            save_selected_credential("qiskit-code-assistant")
+            print("Manually entered token saved as 'qiskit-code-assistant' credential")
+        except Exception as e:
+            print(f"Error saving token: {e}")
+            # Still keep the token in runtime_configs so it can be used this session
+            # Even if saving to file fails
 
 
 def get_preference_file_path():
