@@ -40,6 +40,10 @@ Use IBM's hosted service with a premium account for the best experience:
 
 See [GETTING_STARTED.md](GETTING_STARTED.md) for detailed setup instructions.
 
+#### Managing Multiple Credentials
+
+If you have multiple IBM Quantum credentials configured in your `~/.qiskit/qiskit-ibm.json` file (e.g., for different environments like production and development), the extension will automatically prompt you to select which credential to use when it starts. You can choose to select one from the file, enter a token manually, or dismiss the prompt to use automatic selection. See [docs/credential_selection.md](docs/credential_selection.md) for detailed instructions.
+
 ### Option 2: Local Setup (For Non-Premium Users)
 
 If you don't have an IBM Quantum Premium account, run the Qiskit Code Assistant entirely on your local machine:
