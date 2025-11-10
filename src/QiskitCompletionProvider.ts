@@ -431,15 +431,19 @@ export class QiskitInlineCompletionProvider
           textParts.push(newText);
           yield { response: { insertText: textParts.join('') } };
         }
-      }
 
-      // Update prompt info after successful completion
-      if (lastChunk) {
-        this.prompt_id = lastChunk.prompt_id;
-        if (this.prompt_id) {
+        // Update prompt_id immediately on first chunk to handle early cancellation
+        // This ensures accept() has a valid prompt_id even if stream is cancelled
+        if (lastChunk && lastChunk.prompt_id && !this.prompt_id) {
+          this.prompt_id = lastChunk.prompt_id;
           lastPrompt = lastChunk;
           this.app.commands.notifyCommandChanged(FEEDBACK_COMMAND);
         }
+      }
+
+      // Update lastPrompt with final chunk data if we got more chunks
+      if (lastChunk) {
+        lastPrompt = lastChunk;
       }
     } catch (error) {
       // Handle errors during streaming
