@@ -450,4 +450,4 @@ export class NewComponent {
 - [Jest Documentation](https://jestjs.io/)
 - [ts-jest Documentation](https://kulshekhar.github.io/ts-jest/)
 - [Testing Library](https://testing-library.com/)
-- [JupyterLab Testing Guide](https://jupyterlab.readthedocs.io/en/stable/extension/testing.html)
+- [JupyterLab Extension Development Guide](https://jupyterlab.readthedocs.io/en/stable/extension/extension_dev.html)
