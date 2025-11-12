@@ -142,7 +142,7 @@ async function* mockGenerator() {
 }
 
 const results = [];
-for await (const chunk of streamingFunction()) {
+for await (const chunk of mockGenerator()) {
   results.push(chunk);
 }
 
