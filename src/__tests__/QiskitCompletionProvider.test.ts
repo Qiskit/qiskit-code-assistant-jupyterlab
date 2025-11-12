@@ -51,6 +51,13 @@ const mockPostModelPromptAccept =
     typeof api.postModelPromptAccept
   >;
 
+// Helper function to create async generator mocks
+async function* createMockGenerator<T>(chunks: T[]): AsyncGenerator<T> {
+  for (const chunk of chunks) {
+    yield chunk;
+  }
+}
+
 describe('QiskitCompletionProvider', () => {
   let provider: QiskitCompletionProvider;
   let mockSettings: any;
@@ -372,11 +379,12 @@ describe('QiskitInlineCompletionProvider', () => {
     it('should set up streaming for manual trigger with streaming enabled', async () => {
       mockSettings.composite.enableStreaming = true;
 
-      async function* mockGenerator() {
-        yield { items: ['chunk'], prompt_id: 'prompt-123', input: 'test' };
-      }
-
-      mockAutoCompleteStreaming.mockReturnValue(mockGenerator());
+      const mockChunks = [
+        { items: ['chunk'], prompt_id: 'prompt-123', input: 'test' }
+      ];
+      mockAutoCompleteStreaming.mockReturnValue(
+        createMockGenerator(mockChunks)
+      );
 
       const request = { text: 'test', offset: 0 } as any;
       const context = {
@@ -394,7 +402,9 @@ describe('QiskitInlineCompletionProvider', () => {
 
     it('should cancel existing streams before starting new one', async () => {
       mockSettings.composite.enableStreaming = true;
-      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
+      const consoleDebugSpy = jest
+        .spyOn(console, 'debug')
+        .mockImplementation(() => {});
 
       // Set up an existing stream
       const existingController = new AbortController();
@@ -406,11 +416,12 @@ describe('QiskitInlineCompletionProvider', () => {
         timeoutId: undefined
       });
 
-      async function* mockGenerator() {
-        yield { items: ['new chunk'], prompt_id: 'p1', input: 'test' };
-      }
-
-      mockAutoCompleteStreaming.mockReturnValue(mockGenerator());
+      const mockChunks = [
+        { items: ['new chunk'], prompt_id: 'p1', input: 'test' }
+      ];
+      mockAutoCompleteStreaming.mockReturnValue(
+        createMockGenerator(mockChunks)
+      );
 
       const request = { text: 'test', offset: 0 } as any;
       const context = {
@@ -438,16 +449,10 @@ describe('QiskitInlineCompletionProvider', () => {
         { items: [' World'], prompt_id: 'prompt-123', input: 'test' }
       ];
 
-      async function* mockGenerator() {
-        for (const chunk of mockChunks) {
-          yield chunk;
-        }
-      }
-
       const token = 'test-token';
       const mockAbortController = new AbortController();
       provider._streamPromises.set(token, {
-        generator: mockGenerator(),
+        generator: createMockGenerator(mockChunks),
         abortController: mockAbortController,
         timeoutId: undefined
       });
@@ -477,16 +482,10 @@ describe('QiskitInlineCompletionProvider', () => {
         { items: ['text'], prompt_id: 'prompt-123', input: 'test' }
       ];
 
-      async function* mockGenerator() {
-        for (const chunk of mockChunks) {
-          yield chunk;
-        }
-      }
-
       const token = 'test-token';
       const mockAbortController = new AbortController();
       provider._streamPromises.set(token, {
-        generator: mockGenerator(),
+        generator: createMockGenerator(mockChunks),
         abortController: mockAbortController,
         timeoutId: undefined
       });
@@ -526,7 +525,9 @@ describe('QiskitInlineCompletionProvider', () => {
     });
 
     it('should handle other errors during streaming', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       // eslint-disable-next-line require-yield
       async function* mockGenerator() {
@@ -558,19 +559,13 @@ describe('QiskitInlineCompletionProvider', () => {
     it('should clear timeout when stream completes', async () => {
       const mockChunks = [{ items: ['text'], prompt_id: 'p1', input: 'test' }];
 
-      async function* mockGenerator() {
-        for (const chunk of mockChunks) {
-          yield chunk;
-        }
-      }
-
       const token = 'test-token';
       const mockAbortController = new AbortController();
       const mockTimeoutId = setTimeout(() => {}, 5000) as any;
       const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
 
       provider._streamPromises.set(token, {
-        generator: mockGenerator(),
+        generator: createMockGenerator(mockChunks),
         abortController: mockAbortController,
         timeoutId: mockTimeoutId
       });
