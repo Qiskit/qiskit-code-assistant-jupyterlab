@@ -394,11 +394,12 @@ describe('QiskitInlineCompletionProvider', () => {
 
     it('should cancel existing streams before starting new one', async () => {
       mockSettings.composite.enableStreaming = true;
-      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
+      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
 
       // Set up an existing stream
       const existingController = new AbortController();
       const abortSpy = jest.spyOn(existingController, 'abort');
+      // eslint-disable-next-line require-yield
       provider._streamPromises.set('existing-token', {
         generator: (async function* () {})(),
         abortController: existingController,
@@ -525,7 +526,7 @@ describe('QiskitInlineCompletionProvider', () => {
     });
 
     it('should handle other errors during streaming', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       // eslint-disable-next-line require-yield
       async function* mockGenerator() {
