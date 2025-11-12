@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  lint-test-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,6 +32,18 @@ jobs:
         set -eux
         jlpm
         jlpm run lint:check
+
+    - name: Run tests & coverage
+      run: |
+        set -eux
+        jlpm test:coverage
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage/
+        retention-days: 7
 
     - name: Build the extension
       run: |
@@ -60,7 +72,7 @@ jobs:
         if-no-files-found: error
 
   test_isolated:
-    needs: build
+    needs: lint-test-build
     runs-on: ubuntu-latest
 
     steps:

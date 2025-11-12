@@ -3,5 +3,7 @@ node_modules
 **/lib
 **/package.json
 !/package.json
+package-lock.json
+yarn.lock
 qiskit_code_assistant_jupyterlab
 setup_local.sh

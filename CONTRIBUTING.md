@@ -39,6 +39,36 @@ By default, the `jlpm build` command generates the source maps for this extensio
 jupyter lab build --minimize=False
 ```
 
+## Testing
+
+This extension uses Jest for unit testing. The test suite includes 60+ tests covering API services, autocomplete functionality, completion providers, and utility functions with excellent coverage of core business logic.
+
+### Quick Start
+
+```bash
+# Run all tests
+jlpm test
+
+# Run tests in watch mode (useful during development)
+jlpm test:watch
+
+# Run tests with coverage report
+jlpm test:coverage
+```
+
+### Comprehensive Testing Guide
+
+For detailed information about the testing infrastructure, including:
+
+- Test structure and organization
+- Writing new tests
+- Mocking dependencies
+- Debugging tests
+- CI/CD integration
+- Best practices
+
+Please refer to **[TESTING.md](TESTING.md)** for the complete testing guide.
+
 ## Development uninstall
 
 ```bash
