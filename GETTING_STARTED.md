@@ -162,6 +162,7 @@ The Qiskit Code Assistant includes a powerful code migration feature that helps 
 #### Settings
 
 The migration feature respects the `enableStreaming` setting:
+
 - **Streaming Enabled**: See migration results appear progressively as they're generated
 - **Streaming Disabled**: Migration completes before updating cells (better for slower connections)
 

@@ -200,16 +200,19 @@ There are a few settings we recommend to edit in your user settings.
 The extension includes a powerful code migration feature to help modernize your Qiskit code:
 
 #### Migrate a Single Cell
+
 - Right-click on a code cell and select "Migrate code" from the context menu
 - Confirm the migration in the dialog
 - The cell content will be automatically updated with migrated code
 
 #### Migrate Entire Notebook
+
 - Click the migration button (🔄) in the notebook toolbar (next to the cell type dropdown)
 - Confirm to migrate all code cells in your notebook
 - Markdown cells are preserved unchanged
 
 #### Key Benefits
+
 - **Automatic Detection**: Identifies code that needs migration to newer Qiskit versions
 - **API Updates**: Modernizes deprecated APIs and patterns
 - **Streaming Support**: See migration progress in real-time when streaming is enabled

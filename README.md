@@ -96,6 +96,7 @@ The extension includes a code migration feature that helps you migrate legacy Qi
 - **Streaming Support**: Real-time updates as the migration processes your code (configurable via settings)
 
 The migration feature automatically:
+
 - Detects code that needs migration to newer Qiskit versions
 - Updates deprecated APIs and patterns
 - Preserves your code structure and comments
