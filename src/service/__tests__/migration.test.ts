@@ -27,7 +27,7 @@ import * as api from '../api';
 import * as token from '../token';
 import { Cell } from '@jupyterlab/cells';
 import { NotebookPanel } from '@jupyterlab/notebook';
-import { Notification, showDialog, Dialog } from '@jupyterlab/apputils';
+import { Notification, showDialog } from '@jupyterlab/apputils';
 import { StatusBarWidget } from '../../StatusBarWidget';
 
 // Mock dependencies
@@ -247,7 +247,7 @@ describe('Migration Service', () => {
       const mockCell = createMockCell('code', 'from qiskit import *');
       const consoleErrorSpy = jest
         .spyOn(console, 'error')
-        .mockImplementation();
+        .mockImplementation(() => {});
 
       mockShowDialog.mockResolvedValue({
         button: { accept: true }
@@ -391,7 +391,7 @@ describe('Migration Service', () => {
       const mockNotebook = createMockNotebook(cells);
       const consoleErrorSpy = jest
         .spyOn(console, 'error')
-        .mockImplementation();
+        .mockImplementation(() => {});
 
       mockShowDialog.mockResolvedValue({
         button: { accept: true }

@@ -719,7 +719,7 @@ describe('API Service', () => {
 
       const consoleErrorSpy = jest
         .spyOn(console, 'error')
-        .mockImplementation();
+        .mockImplementation(() => {});
 
       const results = [];
       for await (const chunk of api.postMigrationStreaming(code)) {
@@ -767,9 +767,9 @@ describe('API Service', () => {
     it('should handle empty stream', async () => {
       const code = 'test code';
 
+      // eslint-disable-next-line require-yield
       async function* mockStreamGenerator() {
-        // Empty generator
-        return;
+        // Empty generator - intentionally no yields to test empty stream
       }
 
       mockRequestAPIStreaming.mockReturnValue(mockStreamGenerator() as any);
