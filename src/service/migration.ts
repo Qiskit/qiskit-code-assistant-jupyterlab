@@ -24,10 +24,11 @@ import { Cell } from '@jupyterlab/cells';
 import { NotebookPanel } from '@jupyterlab/notebook';
 
 // Constants
-export const CHAR_LIMIT = 4_000;
 const NB_CELL_MARKER_PREFIX = '### Notebook_Cell_';
 const NB_CELL_MARKER_REGEX = /(?=### Notebook_Cell_\d+\n)/;
 const NB_CELL_ID_REGEX = /### Notebook_Cell_\d+\n/;
+const NB_CELL_INDEX_REGEX = /^### Notebook_Cell_(\d+)/;
+const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB max buffer to prevent memory issues
 
 // Helper functions
 /**
@@ -97,9 +98,18 @@ async function* migrationPromiseStreaming(
 /**
  * Migrates a single cell using non-streaming migration
  * @param nb_cell The notebook cell to migrate
+ * @param signal Optional AbortSignal to cancel the migration
  */
-async function cellMigration(nb_cell: Cell): Promise<void> {
+async function cellMigration(
+  nb_cell: Cell,
+  signal?: AbortSignal
+): Promise<void> {
   try {
+    // Check if operation was aborted before starting
+    if (signal?.aborted) {
+      throw new Error('Migration cancelled');
+    }
+
     const code = nb_cell.model.sharedModel.getSource();
     if (!code || !code.trim()) {
       throw new Error('Cell contains no code to migrate');
@@ -132,9 +142,18 @@ async function cellMigration(nb_cell: Cell): Promise<void> {
 /**
  * Migrates a single cell using streaming migration for real-time updates
  * @param nb_cell The notebook cell to migrate
+ * @param signal Optional AbortSignal to cancel the migration
  */
-async function cellMigrationStreaming(nb_cell: Cell): Promise<void> {
+async function cellMigrationStreaming(
+  nb_cell: Cell,
+  signal?: AbortSignal
+): Promise<void> {
   try {
+    // Check if operation was aborted before starting
+    if (signal?.aborted) {
+      throw new Error('Migration cancelled');
+    }
+
     const code = nb_cell.model.sharedModel.getSource();
     if (!code || !code.trim()) {
       throw new Error('Cell contains no code to migrate');
@@ -147,6 +166,10 @@ async function cellMigrationStreaming(nb_cell: Cell): Promise<void> {
     let hasContent = false;
 
     for await (const chunk of migrationResponseGenerator) {
+      // Check for abort during streaming
+      if (signal?.aborted) {
+        throw new Error('Migration cancelled');
+      }
       if (!chunk || chunk.migratedCode === undefined) {
         console.warn('Received invalid chunk in streaming response');
         continue;
@@ -183,12 +206,19 @@ async function cellMigrationStreaming(nb_cell: Cell): Promise<void> {
  * Migrates multiple notebook cells using non-streaming migration
  * @param notebookCells Array of notebook cells
  * @param codeCellsText Array of code cell texts with cell markers
+ * @param signal Optional AbortSignal to cancel the migration
  */
 async function notebookMigration(
   notebookCells: readonly Cell[],
-  codeCellsText: string[]
+  codeCellsText: string[],
+  signal?: AbortSignal
 ): Promise<void> {
   try {
+    // Check if operation was aborted before starting
+    if (signal?.aborted) {
+      throw new Error('Migration cancelled');
+    }
+
     if (!codeCellsText || codeCellsText.length === 0) {
       throw new Error('No code cells provided for migration');
     }
@@ -212,9 +242,10 @@ async function notebookMigration(
       migrationResponse.migratedCode.split(NB_CELL_MARKER_REGEX);
 
     for (let i = 0; i < migratedCodeCells.length; i++) {
-      const match = migratedCodeCells[i].match(/\d+/);
-      if (match) {
-        const cellIndex = parseInt(match[0], 10);
+      // Use more specific regex to match cell marker
+      const match = migratedCodeCells[i].match(NB_CELL_INDEX_REGEX);
+      if (match && match[1]) {
+        const cellIndex = parseInt(match[1], 10);
         if (cellIndex >= 0 && cellIndex < notebookCells.length) {
           const migratedContent = migratedCodeCells[i].replace(
             NB_CELL_ID_REGEX,
@@ -244,12 +275,19 @@ async function notebookMigration(
  * Provides better user experience by updating cells as migration progresses
  * @param notebookCells Array of notebook cells
  * @param codeCellsText Array of code cell texts with cell markers
+ * @param signal Optional AbortSignal to cancel the migration
  */
 async function notebookMigrationStreaming(
   notebookCells: readonly Cell[],
-  codeCellsText: string[]
+  codeCellsText: string[],
+  signal?: AbortSignal
 ): Promise<void> {
   try {
+    // Check if operation was aborted before starting
+    if (signal?.aborted) {
+      throw new Error('Migration cancelled');
+    }
+
     if (!codeCellsText || codeCellsText.length === 0) {
       throw new Error('No code cells provided for migration');
     }
@@ -264,6 +302,11 @@ async function notebookMigrationStreaming(
     let hasReceivedData = false;
 
     for await (const chunk of migrationResponseGenerator) {
+      // Check for abort during streaming
+      if (signal?.aborted) {
+        throw new Error('Migration cancelled');
+      }
+
       if (!chunk || chunk.migratedCode === undefined) {
         console.warn('Received invalid chunk in streaming response');
         continue;
@@ -271,6 +314,16 @@ async function notebookMigrationStreaming(
 
       hasReceivedData = true;
       buffer += chunk.migratedCode;
+
+      // Protect against unbounded buffer growth
+      if (buffer.length > MAX_BUFFER_SIZE) {
+        const error = `Streaming buffer exceeded maximum size (${MAX_BUFFER_SIZE} bytes)`;
+        console.error(error);
+        Notification.error(`Migration Error: ${error}`, {
+          autoClose: false
+        });
+        throw new Error(error);
+      }
 
       // Process complete cells in the buffer
       let markerPos = buffer.search(NB_CELL_ID_REGEX);
@@ -298,10 +351,12 @@ async function notebookMigrationStreaming(
           }
         }
 
-        // Extract and parse new cell index
-        const markerMatch = buffer.substring(markerPos).match(/\d+/);
-        if (markerMatch) {
-          currentCellIndex = parseInt(markerMatch[0], 10);
+        // Extract and parse new cell index using more specific regex
+        const markerMatch = buffer
+          .substring(markerPos)
+          .match(NB_CELL_INDEX_REGEX);
+        if (markerMatch && markerMatch[1]) {
+          currentCellIndex = parseInt(markerMatch[1], 10);
           // Remove the processed part including the marker
           buffer = buffer
             .substring(markerPos)
