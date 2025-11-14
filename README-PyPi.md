@@ -16,10 +16,11 @@ Qiskit is the open-source quantum SDK preferred by 69% of respondents to the Uni
 
 ## Features
 
-- Accelerate Qiskit code generation by leveraging generative AI based on the `mistral-small-3.2-24b-qiskit` model
-- Use abstract and specific prompts to generate recommendations
-- Manage code changes by reviewing, accepting, and rejecting suggestions
-- Supports Python code files
+- **Code Generation**: Accelerate Qiskit code generation by leveraging generative AI based on the `mistral-small-3.2-24b-qiskit` model
+- **Smart Prompts**: Use abstract and specific prompts to generate recommendations
+- **Code Review**: Manage code changes by reviewing, accepting, and rejecting suggestions
+- **Code Migration**: Automatically migrate legacy Qiskit code to newer versions with single-cell or full-notebook support
+- **Python Support**: Works with Python code files and Jupyter notebooks
 
 ## Learn the best ways to use Qiskit and IBM Quantum Platform services
 
@@ -192,7 +193,27 @@ There are a few settings we recommend to edit in your user settings.
    > **NOTE**: The telemetry does not collect your code nor the suggested code completions.
    > What is collected is whether a code suggestion was accepted or dismissed.
 
-6. Response streaming can be enabled by checking the `enableStreaming` setting.
+6. Response streaming can be disabled by editing the `enableStreaming` setting.
+
+### Code Migration
+
+The extension includes a powerful code migration feature to help modernize your Qiskit code:
+
+#### Migrate a Single Cell
+- Right-click on a code cell and select "Migrate code" from the context menu
+- Confirm the migration in the dialog
+- The cell content will be automatically updated with migrated code
+
+#### Migrate Entire Notebook
+- Click the migration button (🔄) in the notebook toolbar (next to the cell type dropdown)
+- Confirm to migrate all code cells in your notebook
+- Markdown cells are preserved unchanged
+
+#### Key Benefits
+- **Automatic Detection**: Identifies code that needs migration to newer Qiskit versions
+- **API Updates**: Modernizes deprecated APIs and patterns
+- **Streaming Support**: See migration progress in real-time when streaming is enabled
+- **Safe Operations**: Always asks for confirmation before making changes
 
 ## Terms of use
 

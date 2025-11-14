@@ -85,6 +85,24 @@ pip uninstall qiskit_code_assistant_jupyterlab
 - **Local Setup**: See [LOCAL_SETUP.md](LOCAL_SETUP.md) for running models locally with Ollama
 - **Cloud Setup**: See [GETTING_STARTED.md](GETTING_STARTED.md) for using IBM Quantum Cloud
 
+### Features
+
+#### Code Migration
+
+The extension includes a code migration feature that helps you migrate legacy Qiskit code to newer versions:
+
+- **Single Cell Migration**: Right-click on a code cell and select "Migrate code" from the context menu to migrate just that cell
+- **Full Notebook Migration**: Click the migration button in the notebook toolbar (next to the cell type dropdown) to migrate all code cells in the notebook
+- **Streaming Support**: Real-time updates as the migration processes your code (configurable via settings)
+
+The migration feature automatically:
+- Detects code that needs migration to newer Qiskit versions
+- Updates deprecated APIs and patterns
+- Preserves your code structure and comments
+- Skips markdown cells and empty code cells
+
+**Note**: Migration requires an active API connection to IBM Quantum Cloud or a compatible local LLM service.
+
 ## Contributing
 
 To learn more about contributing or installing locally read [CONTRIBUTING](CONTRIBUTING.md).
