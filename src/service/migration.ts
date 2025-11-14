@@ -20,7 +20,7 @@ import { postMigration, postMigrationStreaming } from './api';
 import { checkAPIToken } from './token';
 import { StatusBarWidget } from '../StatusBarWidget';
 import { IMigrationResponse, IMigrationReturn } from '../utils/schema';
-import { Cell } from '@jupyterlab/cells'
+import { Cell } from '@jupyterlab/cells';
 import { NotebookPanel } from '@jupyterlab/notebook';
 
 export const CHAR_LIMIT = 4_000;
@@ -33,18 +33,14 @@ function getMigratedCode(json: any): string {
   return json?.migrated_code ?? '';
 }
 
-async function migrationPromise(
-  inputCode: string
-): Promise<IMigrationReturn> {
-  return postMigration(inputCode).then(
-    (response: IMigrationResponse) => {
-      return {
-        migratedCode: response.migrated_code,
-        migrationId: response.migration_id,
-        input: inputCode
-      };
-    }
-  );
+async function migrationPromise(inputCode: string): Promise<IMigrationReturn> {
+  return postMigration(inputCode).then((response: IMigrationResponse) => {
+    return {
+      migratedCode: response.migrated_code,
+      migrationId: response.migration_id,
+      input: inputCode
+    };
+  });
 }
 
 async function* migrationPromiseStreaming(
@@ -66,16 +62,16 @@ async function* migrationPromiseStreaming(
 function isValidCodeCell(nb_cell: Cell, allow_empty: boolean = false) {
   if (nb_cell.model.type === 'code') {
     if (allow_empty) {
-      return true
+      return true;
     } else {
       const code = nb_cell.model.sharedModel.getSource();
-      return !!code.trim()
+      return !!code.trim();
     }
   }
-  return false
+  return false;
 }
 
-async function cellMigration(nb_cell: Cell ) {
+async function cellMigration(nb_cell: Cell) {
   const code = nb_cell.model.sharedModel.getSource();
   const migrationResponse: IMigrationReturn = await migrationPromise(code);
 
@@ -90,15 +86,16 @@ async function cellMigration(nb_cell: Cell ) {
 
 async function cellMigrationStreaming(nb_cell: Cell) {
   const code = nb_cell.model.sharedModel.getSource();
-  const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> = migrationPromiseStreaming(code);
+  const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
+    migrationPromiseStreaming(code);
 
-  let clearedCell = false
-  for await(const chunk of migrationResponseGenerator) {
+  let clearedCell = false;
+  for await (const chunk of migrationResponseGenerator) {
     if (!clearedCell && chunk.migratedCode) {
-      nb_cell.model.sharedModel.source = ''
-      clearedCell = true
+      nb_cell.model.sharedModel.source = '';
+      clearedCell = true;
     }
-    nb_cell.model.sharedModel.source += chunk.migratedCode
+    nb_cell.model.sharedModel.source += chunk.migratedCode;
   }
 }
 
@@ -106,21 +103,25 @@ async function notebookMigration(
   notebookCells: readonly Cell[],
   codeCellsText: string[]
 ) {
-  let combinedCode = codeCellsText.join('\n\n');
-  const migrationResponse: IMigrationReturn = await migrationPromise(combinedCode);
+  const combinedCode = codeCellsText.join('\n\n');
+  const migrationResponse: IMigrationReturn =
+    await migrationPromise(combinedCode);
 
   if (migrationResponse?.migratedCode.trim() === combinedCode.trim()) {
     Notification.warning('No code was found that needed to be migrated', {
       autoClose: false
     });
   } else {
-    const migratedCodeCells = migrationResponse.migratedCode.split(NB_CELL_MARKER_REGEX);
+    const migratedCodeCells =
+      migrationResponse.migratedCode.split(NB_CELL_MARKER_REGEX);
 
     for (let i = 0; i < migratedCodeCells.length; i++) {
-      let match = migratedCodeCells[i].match(/\d+/);
+      const match = migratedCodeCells[i].match(/\d+/);
       if (match) {
-        const cellIndex = parseInt(match[0])
-        notebookCells[cellIndex].model.sharedModel.setSource(migratedCodeCells[i].replace(NB_CELL_ID_REGEX, ''));
+        const cellIndex = parseInt(match[0]);
+        notebookCells[cellIndex].model.sharedModel.setSource(
+          migratedCodeCells[i].replace(NB_CELL_ID_REGEX, '')
+        );
       }
     }
   }
@@ -130,29 +131,34 @@ async function notebookMigrationStreaming(
   notebookCells: readonly Cell[],
   codeCellsText: string[]
 ) {
-  let combinedCode = codeCellsText.join('\n\n');
-  const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> = migrationPromiseStreaming(combinedCode);
+  const combinedCode = codeCellsText.join('\n\n');
+  const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
+    migrationPromiseStreaming(combinedCode);
 
-  let prevCellIndex = -1
-  let migratedCombinedCode = ''
-  for await(const chunk of migrationResponseGenerator) {
-    migratedCombinedCode += chunk.migratedCode
-    const found = migratedCombinedCode.search(NB_CELL_ID_REGEX)
+  let prevCellIndex = -1;
+  let migratedCombinedCode = '';
+  for await (const chunk of migrationResponseGenerator) {
+    migratedCombinedCode += chunk.migratedCode;
+    const found = migratedCombinedCode.search(NB_CELL_ID_REGEX);
     if (found > -1) {
-      let match = migratedCombinedCode.substring(found).match(/\d+/);
+      const match = migratedCombinedCode.substring(found).match(/\d+/);
       if (match) {
-        const cellIndex = parseInt(match[0])
+        const cellIndex = parseInt(match[0]);
         if (prevCellIndex > -1) {
-          notebookCells[prevCellIndex].model.sharedModel.setSource(migratedCombinedCode.replace(NB_CELL_ID_REGEX, ''));
+          notebookCells[prevCellIndex].model.sharedModel.setSource(
+            migratedCombinedCode.replace(NB_CELL_ID_REGEX, '')
+          );
         }
-        prevCellIndex = cellIndex
-        migratedCombinedCode = ''
+        prevCellIndex = cellIndex;
+        migratedCombinedCode = '';
       }
     }
   }
 
   if (migratedCombinedCode) {
-    notebookCells[prevCellIndex].model.sharedModel.setSource(migratedCombinedCode.replace(NB_CELL_ID_REGEX, ''));
+    notebookCells[prevCellIndex].model.sharedModel.setSource(
+      migratedCombinedCode.replace(NB_CELL_ID_REGEX, '')
+    );
   }
 }
 
@@ -161,35 +167,41 @@ export async function migrateNotebookCell(
   stream: boolean = false
 ): Promise<void> {
   if (!nb_cell) {
-    return
+    return;
   }
 
   try {
     const result = await showDialog({
       body: 'Migrate the current notebook cell?',
-      buttons: [Dialog.cancelButton({ label: 'No' }), Dialog.okButton({ label: 'Yes' })]
-    })
+      buttons: [
+        Dialog.cancelButton({ label: 'No' }),
+        Dialog.okButton({ label: 'Yes' })
+      ]
+    });
 
     if (result.button.accept) {
       // Show loading icon in status bar
       StatusBarWidget.widget.setLoadingStatus();
 
-      // make sure notebook cell is code cell and has content 
+      // make sure notebook cell is code cell and has content
       if (!isValidCodeCell(nb_cell)) {
-          Notification.warning('Notebook cell is not a code cell or contains no code to migrate', {
+        Notification.warning(
+          'Notebook cell is not a code cell or contains no code to migrate',
+          {
             autoClose: false
-          });
+          }
+        );
       } else {
         await checkAPIToken();
 
         if (stream) {
-          await cellMigrationStreaming(nb_cell)
+          await cellMigrationStreaming(nb_cell);
         } else {
-          await cellMigration(nb_cell)
+          await cellMigration(nb_cell);
         }
       }
     }
-  } catch(error) {
+  } catch (error) {
     console.error('Failed to run migration', error);
   } finally {
     // Remove loading icon in status bar
@@ -201,14 +213,16 @@ export async function migrateNotebook(
   notebook: NotebookPanel,
   stream: boolean = false
 ) {
-  const codeCells = []
+  const codeCells = [];
   const cells = notebook.content.widgets;
-
 
   const result = await showDialog({
     body: 'Migrate the entire notebook?',
-    buttons: [Dialog.cancelButton({ label: 'No' }), Dialog.okButton({ label: 'Yes' })]
-  })
+    buttons: [
+      Dialog.cancelButton({ label: 'No' }),
+      Dialog.okButton({ label: 'Yes' })
+    ]
+  });
 
   if (result.button.accept) {
     // Show loading icon in status bar
@@ -217,12 +231,14 @@ export async function migrateNotebook(
     for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
       if (isValidCodeCell(cells[cellIndex])) {
         // copy code cell text and prefix with cell marker (i.e., `### Notebook_Cell_x`)
-        codeCells.push(`${NB_CELL_MARKER_PREFIX}${cellIndex}\n${cells[cellIndex].model.sharedModel.getSource()}`);
+        codeCells.push(
+          `${NB_CELL_MARKER_PREFIX}${cellIndex}\n${cells[cellIndex].model.sharedModel.getSource()}`
+        );
       }
     }
 
     try {
-      if (codeCells.length == 0) {
+      if (codeCells.length === 0) {
         Notification.warning('No code cells found to migrate', {
           autoClose: false
         });
@@ -230,12 +246,12 @@ export async function migrateNotebook(
         await checkAPIToken();
 
         if (stream) {
-          await notebookMigrationStreaming(cells, codeCells)
+          await notebookMigrationStreaming(cells, codeCells);
         } else {
-          await notebookMigration(cells, codeCells)
+          await notebookMigration(cells, codeCells);
         }
       }
-    } catch(error) {
+    } catch (error) {
       console.error('Failed to process migration', error);
     } finally {
       // Remove loading icon in status bar

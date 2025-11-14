@@ -21,7 +21,11 @@ import {
 import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { ICompletionProviderManager } from '@jupyterlab/completer';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { INotebookModel, INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
+import {
+  INotebookModel,
+  INotebookTracker,
+  NotebookPanel
+} from '@jupyterlab/notebook';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { IStatusBar } from '@jupyterlab/statusbar';
 
@@ -165,19 +169,16 @@ const plugin: JupyterFrontEndPlugin<void> = {
       execute: () => clearCredentialSelection()
     });
 
-    const streamingEnabled = settings.composite[
-      'enableStreaming'
-    ] as boolean;
+    const streamingEnabled = settings.composite['enableStreaming'] as boolean;
 
     app.commands.addCommand(CommandIDs.migrateCode, {
       label: 'Migrate code',
       icon: migrationIcon,
-      execute: () => migrateNotebookCell(notebookTracker.activeCell, streamingEnabled),
+      execute: () =>
+        migrateNotebookCell(notebookTracker.activeCell, streamingEnabled),
       isEnabled: () => true,
       isVisible: () =>
-        ['code'].includes(
-          notebookTracker.activeCell?.model.type || ''
-        )
+        ['code'].includes(notebookTracker.activeCell?.model.type || '')
     });
 
     palette.addItem({
@@ -211,11 +212,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
     });
 
     app.docRegistry.addWidgetExtension('Notebook', {
-      createNew(panel: NotebookPanel, context: DocumentRegistry.IContext<INotebookModel>) {
+      createNew(
+        panel: NotebookPanel,
+        context: DocumentRegistry.IContext<INotebookModel>
+      ) {
         const button = new ToolbarButton({
           label: '',
           onClick: () => {
-            migrateNotebook(panel, streamingEnabled)
+            migrateNotebook(panel, streamingEnabled);
           },
           tooltip: 'Migrate notebook code cells',
           icon: migrationIcon

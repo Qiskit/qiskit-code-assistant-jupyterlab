@@ -484,10 +484,8 @@ export async function deleteClearCredentialSelection(): Promise<void> {
 }
 
 // POST /migrate
-export async function postMigration(
-  code: string
-): Promise<IMigrationResponse> {
-  return await requestAPI(`migrate`, {
+export async function postMigration(code: string): Promise<IMigrationResponse> {
+  return await requestAPI('migrate', {
     method: 'POST',
     body: JSON.stringify({ code })
   }).then(async response => {
@@ -510,7 +508,7 @@ export async function postMigration(
 export async function* postMigrationStreaming(
   code: string
 ): AsyncGenerator<IMigrationResponse> {
-  const response = await requestAPIStreaming(`migrate`, {
+  const response = await requestAPIStreaming('migrate', {
     method: 'POST',
     body: JSON.stringify({ code, stream: true })
   });
