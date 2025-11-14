@@ -23,16 +23,46 @@ import { IMigrationResponse, IMigrationReturn } from '../utils/schema';
 import { Cell } from '@jupyterlab/cells';
 import { NotebookPanel } from '@jupyterlab/notebook';
 
+// Constants
 export const CHAR_LIMIT = 4_000;
-
 const NB_CELL_MARKER_PREFIX = '### Notebook_Cell_';
 const NB_CELL_MARKER_REGEX = /(?=### Notebook_Cell_\d+\n)/;
 const NB_CELL_ID_REGEX = /### Notebook_Cell_\d+\n/;
 
+// Helper functions
+/**
+ * Extracts migrated code from a migration response
+ * @param json Migration response object
+ * @returns The migrated code or empty string if not present
+ */
 function getMigratedCode(json: any): string {
   return json?.migrated_code ?? '';
 }
 
+/**
+ * Validates if a cell is a code cell and optionally checks if it has content
+ * @param nb_cell The cell to validate
+ * @param allow_empty Whether to allow empty cells
+ * @returns true if the cell is valid for migration
+ */
+function isValidCodeCell(nb_cell: Cell, allow_empty: boolean = false): boolean {
+  if (nb_cell.model.type !== 'code') {
+    return false;
+  }
+
+  if (allow_empty) {
+    return true;
+  }
+
+  const code = nb_cell.model.sharedModel.getSource();
+  return !!code.trim();
+}
+
+/**
+ * Sends a migration request for the given code
+ * @param inputCode Code to migrate
+ * @returns Promise resolving to migration result
+ */
 async function migrationPromise(inputCode: string): Promise<IMigrationReturn> {
   return postMigration(inputCode).then((response: IMigrationResponse) => {
     return {
@@ -43,6 +73,11 @@ async function migrationPromise(inputCode: string): Promise<IMigrationReturn> {
   });
 }
 
+/**
+ * Streams migration responses for the given code
+ * @param inputCode Code to migrate
+ * @returns Async generator yielding migration chunks
+ */
 async function* migrationPromiseStreaming(
   inputCode: string
 ): AsyncGenerator<IMigrationReturn> {
@@ -59,109 +94,278 @@ async function* migrationPromiseStreaming(
   }
 }
 
-function isValidCodeCell(nb_cell: Cell, allow_empty: boolean = false) {
-  if (nb_cell.model.type === 'code') {
-    if (allow_empty) {
-      return true;
-    } else {
-      const code = nb_cell.model.sharedModel.getSource();
-      return !!code.trim();
+/**
+ * Migrates a single cell using non-streaming migration
+ * @param nb_cell The notebook cell to migrate
+ */
+async function cellMigration(nb_cell: Cell): Promise<void> {
+  try {
+    const code = nb_cell.model.sharedModel.getSource();
+    if (!code || !code.trim()) {
+      throw new Error('Cell contains no code to migrate');
     }
-  }
-  return false;
-}
 
-async function cellMigration(nb_cell: Cell) {
-  const code = nb_cell.model.sharedModel.getSource();
-  const migrationResponse: IMigrationReturn = await migrationPromise(code);
+    const migrationResponse: IMigrationReturn = await migrationPromise(code);
 
-  if (migrationResponse?.migratedCode.trim() === code.trim()) {
-    Notification.warning('No code was found that needed to be migrated', {
+    if (!migrationResponse || !migrationResponse.migratedCode) {
+      throw new Error('Received invalid migration response');
+    }
+
+    if (migrationResponse.migratedCode.trim() === code.trim()) {
+      Notification.warning('No code was found that needed to be migrated', {
+        autoClose: false
+      });
+    } else {
+      nb_cell.model.sharedModel.setSource(migrationResponse.migratedCode);
+    }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in cell migration:', error);
+    Notification.error(`Migration failed: ${errorMessage}`, {
       autoClose: false
     });
-  } else {
-    nb_cell.model.sharedModel.setSource(migrationResponse.migratedCode);
+    throw error;
   }
 }
 
-async function cellMigrationStreaming(nb_cell: Cell) {
-  const code = nb_cell.model.sharedModel.getSource();
-  const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
-    migrationPromiseStreaming(code);
-
-  let clearedCell = false;
-  for await (const chunk of migrationResponseGenerator) {
-    if (!clearedCell && chunk.migratedCode) {
-      nb_cell.model.sharedModel.source = '';
-      clearedCell = true;
+/**
+ * Migrates a single cell using streaming migration for real-time updates
+ * @param nb_cell The notebook cell to migrate
+ */
+async function cellMigrationStreaming(nb_cell: Cell): Promise<void> {
+  try {
+    const code = nb_cell.model.sharedModel.getSource();
+    if (!code || !code.trim()) {
+      throw new Error('Cell contains no code to migrate');
     }
-    nb_cell.model.sharedModel.source += chunk.migratedCode;
+
+    const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
+      migrationPromiseStreaming(code);
+
+    let clearedCell = false;
+    let hasContent = false;
+
+    for await (const chunk of migrationResponseGenerator) {
+      if (!chunk || chunk.migratedCode === undefined) {
+        console.warn('Received invalid chunk in streaming response');
+        continue;
+      }
+
+      if (!clearedCell && chunk.migratedCode) {
+        nb_cell.model.sharedModel.source = '';
+        clearedCell = true;
+      }
+
+      if (chunk.migratedCode) {
+        nb_cell.model.sharedModel.source += chunk.migratedCode;
+        hasContent = true;
+      }
+    }
+
+    if (!hasContent) {
+      Notification.warning('No migrated code was received', {
+        autoClose: false
+      });
+    }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in streaming cell migration:', error);
+    Notification.error(`Streaming migration failed: ${errorMessage}`, {
+      autoClose: false
+    });
+    throw error;
   }
 }
 
+/**
+ * Migrates multiple notebook cells using non-streaming migration
+ * @param notebookCells Array of notebook cells
+ * @param codeCellsText Array of code cell texts with cell markers
+ */
 async function notebookMigration(
   notebookCells: readonly Cell[],
   codeCellsText: string[]
-) {
-  const combinedCode = codeCellsText.join('\n\n');
-  const migrationResponse: IMigrationReturn =
-    await migrationPromise(combinedCode);
+): Promise<void> {
+  try {
+    if (!codeCellsText || codeCellsText.length === 0) {
+      throw new Error('No code cells provided for migration');
+    }
 
-  if (migrationResponse?.migratedCode.trim() === combinedCode.trim()) {
-    Notification.warning('No code was found that needed to be migrated', {
-      autoClose: false
-    });
-  } else {
+    const combinedCode = codeCellsText.join('\n\n');
+    const migrationResponse: IMigrationReturn =
+      await migrationPromise(combinedCode);
+
+    if (!migrationResponse || !migrationResponse.migratedCode) {
+      throw new Error('Received invalid migration response');
+    }
+
+    if (migrationResponse.migratedCode.trim() === combinedCode.trim()) {
+      Notification.warning('No code was found that needed to be migrated', {
+        autoClose: false
+      });
+      return;
+    }
+
     const migratedCodeCells =
       migrationResponse.migratedCode.split(NB_CELL_MARKER_REGEX);
 
     for (let i = 0; i < migratedCodeCells.length; i++) {
       const match = migratedCodeCells[i].match(/\d+/);
       if (match) {
-        const cellIndex = parseInt(match[0]);
-        notebookCells[cellIndex].model.sharedModel.setSource(
-          migratedCodeCells[i].replace(NB_CELL_ID_REGEX, '')
-        );
+        const cellIndex = parseInt(match[0], 10);
+        if (cellIndex >= 0 && cellIndex < notebookCells.length) {
+          const migratedContent = migratedCodeCells[i].replace(
+            NB_CELL_ID_REGEX,
+            ''
+          );
+          notebookCells[cellIndex].model.sharedModel.setSource(migratedContent);
+        } else {
+          console.warn(
+            `Cell index ${cellIndex} out of bounds, skipping update`
+          );
+        }
       }
     }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in notebook migration:', error);
+    Notification.error(`Notebook migration failed: ${errorMessage}`, {
+      autoClose: false
+    });
+    throw error;
   }
 }
 
+/**
+ * Migrates multiple notebook cells using streaming migration for real-time updates
+ * Provides better user experience by updating cells as migration progresses
+ * @param notebookCells Array of notebook cells
+ * @param codeCellsText Array of code cell texts with cell markers
+ */
 async function notebookMigrationStreaming(
   notebookCells: readonly Cell[],
   codeCellsText: string[]
-) {
-  const combinedCode = codeCellsText.join('\n\n');
-  const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
-    migrationPromiseStreaming(combinedCode);
+): Promise<void> {
+  try {
+    if (!codeCellsText || codeCellsText.length === 0) {
+      throw new Error('No code cells provided for migration');
+    }
 
-  let prevCellIndex = -1;
-  let migratedCombinedCode = '';
-  for await (const chunk of migrationResponseGenerator) {
-    migratedCombinedCode += chunk.migratedCode;
-    const found = migratedCombinedCode.search(NB_CELL_ID_REGEX);
-    if (found > -1) {
-      const match = migratedCombinedCode.substring(found).match(/\d+/);
-      if (match) {
-        const cellIndex = parseInt(match[0]);
-        if (prevCellIndex > -1) {
-          notebookCells[prevCellIndex].model.sharedModel.setSource(
-            migratedCombinedCode.replace(NB_CELL_ID_REGEX, '')
+    const combinedCode = codeCellsText.join('\n\n');
+    const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
+      migrationPromiseStreaming(combinedCode);
+
+    let currentCellIndex = -1;
+    let buffer = '';
+    const cellContentMap = new Map<number, string>();
+    let hasReceivedData = false;
+
+    for await (const chunk of migrationResponseGenerator) {
+      if (!chunk || chunk.migratedCode === undefined) {
+        console.warn('Received invalid chunk in streaming response');
+        continue;
+      }
+
+      hasReceivedData = true;
+      buffer += chunk.migratedCode;
+
+      // Process complete cells in the buffer
+      let markerPos = buffer.search(NB_CELL_ID_REGEX);
+      while (markerPos !== -1) {
+        // Save previous cell content if exists
+        if (currentCellIndex !== -1) {
+          const cellContent = buffer.substring(0, markerPos);
+          cellContentMap.set(
+            currentCellIndex,
+            (cellContentMap.get(currentCellIndex) || '') + cellContent
+          );
+
+          // Update cell immediately for better streaming UX
+          if (
+            currentCellIndex >= 0 &&
+            currentCellIndex < notebookCells.length
+          ) {
+            notebookCells[currentCellIndex].model.sharedModel.setSource(
+              cellContentMap.get(currentCellIndex) || ''
+            );
+          } else {
+            console.warn(
+              `Cell index ${currentCellIndex} out of bounds during streaming`
+            );
+          }
+        }
+
+        // Extract and parse new cell index
+        const markerMatch = buffer.substring(markerPos).match(/\d+/);
+        if (markerMatch) {
+          currentCellIndex = parseInt(markerMatch[0], 10);
+          // Remove the processed part including the marker
+          buffer = buffer
+            .substring(markerPos)
+            .replace(NB_CELL_ID_REGEX, '')
+            .trimStart();
+        } else {
+          console.error('Failed to parse cell index from marker');
+          break;
+        }
+
+        markerPos = buffer.search(NB_CELL_ID_REGEX);
+      }
+
+      // Update current cell with partial content for real-time feedback
+      if (currentCellIndex !== -1 && buffer.length > 0) {
+        const currentContent = cellContentMap.get(currentCellIndex) || '';
+        if (currentCellIndex >= 0 && currentCellIndex < notebookCells.length) {
+          notebookCells[currentCellIndex].model.sharedModel.setSource(
+            currentContent + buffer
           );
         }
-        prevCellIndex = cellIndex;
-        migratedCombinedCode = '';
       }
     }
-  }
 
-  if (migratedCombinedCode) {
-    notebookCells[prevCellIndex].model.sharedModel.setSource(
-      migratedCombinedCode.replace(NB_CELL_ID_REGEX, '')
-    );
+    // Finalize the last cell
+    if (currentCellIndex !== -1 && buffer.trim()) {
+      cellContentMap.set(
+        currentCellIndex,
+        (cellContentMap.get(currentCellIndex) || '') + buffer
+      );
+      if (currentCellIndex >= 0 && currentCellIndex < notebookCells.length) {
+        notebookCells[currentCellIndex].model.sharedModel.setSource(
+          cellContentMap.get(currentCellIndex) || ''
+        );
+      }
+    }
+
+    if (!hasReceivedData) {
+      throw new Error('No data received from streaming migration');
+    }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error during streaming notebook migration:', error);
+    Notification.error(`Streaming notebook migration failed: ${errorMessage}`, {
+      autoClose: false
+    });
+    throw error;
   }
 }
 
+/**
+ * Migrates a single notebook cell after user confirmation
+ * Shows a confirmation dialog and performs migration if accepted
+ * Displays loading status during migration process
+ *
+ * @param nb_cell The notebook cell to migrate (null returns early)
+ * @param stream Whether to use streaming migration (default: false)
+ * @returns Promise that resolves when migration completes or is cancelled
+ *
+ * @example
+ * // Migrate current cell with streaming
+ * await migrateNotebookCell(activeCell, true);
+ */
 export async function migrateNotebookCell(
   nb_cell: Cell | null,
   stream: boolean = false
@@ -209,10 +413,24 @@ export async function migrateNotebookCell(
   }
 }
 
+/**
+ * Migrates all code cells in a notebook after user confirmation
+ * Shows a confirmation dialog and performs migration on all code cells if accepted
+ * Markdown cells are automatically skipped
+ * Displays loading status during migration process
+ *
+ * @param notebook The notebook panel containing cells to migrate
+ * @param stream Whether to use streaming migration (default: false)
+ * @returns Promise that resolves when migration completes or is cancelled
+ *
+ * @example
+ * // Migrate entire notebook with streaming
+ * await migrateNotebook(notebookPanel, true);
+ */
 export async function migrateNotebook(
   notebook: NotebookPanel,
   stream: boolean = false
-) {
+): Promise<void> {
   const codeCells = [];
   const cells = notebook.content.widgets;
 
