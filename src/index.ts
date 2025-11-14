@@ -18,9 +18,10 @@ import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-import { ICommandPalette } from '@jupyterlab/apputils';
+import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { ICompletionProviderManager } from '@jupyterlab/completer';
-import { INotebookTracker } from '@jupyterlab/notebook';
+import { DocumentRegistry } from '@jupyterlab/docregistry';
+import { INotebookModel, INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { IStatusBar } from '@jupyterlab/statusbar';
 
@@ -40,7 +41,8 @@ import {
 import { getFeedbackStatusBarWidget, getFeedback } from './service/feedback';
 import { refreshModelsList } from './service/modelHandler';
 import { updateAPIToken } from './service/token';
-import { feedbackIcon } from './utils/icons';
+import { feedbackIcon, migrationIcon } from './utils/icons';
+import { migrateNotebook, migrateNotebookCell } from './service/migration';
 
 const EXTENSION_ID = 'qiskit-code-assistant-jupyterlab';
 
@@ -52,6 +54,7 @@ namespace CommandIDs {
   export const selectCredential = 'qiskit-code-assistant:select-credential';
   export const clearCredential = 'qiskit-code-assistant:clear-credential';
   export const promptFeedback = 'qiskit-code-assistant:prompt-feedback';
+  export const migrateCode = 'qiskit-code-assistant:migrate-code';
 }
 
 /**
@@ -162,6 +165,21 @@ const plugin: JupyterFrontEndPlugin<void> = {
       execute: () => clearCredentialSelection()
     });
 
+    const streamingEnabled = settings.composite[
+      'enableStreaming'
+    ] as boolean;
+
+    app.commands.addCommand(CommandIDs.migrateCode, {
+      label: 'Migrate code',
+      icon: migrationIcon,
+      execute: () => migrateNotebookCell(notebookTracker.activeCell, streamingEnabled),
+      isEnabled: () => true,
+      isVisible: () =>
+        ['code'].includes(
+          notebookTracker.activeCell?.model.type || ''
+        )
+    });
+
     palette.addItem({
       command: CommandIDs.updateApiToken,
       category: 'Qiskit Code Assistant'
@@ -189,6 +207,21 @@ const plugin: JupyterFrontEndPlugin<void> = {
         (settings.composite['enableTelemetry'] as boolean)
       ) {
         inlineProvider.accept();
+      }
+    });
+
+    app.docRegistry.addWidgetExtension('Notebook', {
+      createNew(panel: NotebookPanel, context: DocumentRegistry.IContext<INotebookModel>) {
+        const button = new ToolbarButton({
+          label: '',
+          onClick: () => {
+            migrateNotebook(panel, streamingEnabled)
+          },
+          tooltip: 'Migrate notebook code cells',
+          icon: migrationIcon
+        });
+        // add migrate button before cell type dropdown
+        panel.toolbar.insertBefore('cellType', 'migrateCode', button);
       }
     });
   }

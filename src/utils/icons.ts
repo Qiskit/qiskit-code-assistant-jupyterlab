@@ -18,6 +18,7 @@ import { LabIcon } from '@jupyterlab/ui-components';
 
 import feedbackSvg from '../../style/icons/feedback.svg';
 import qiskitSvg from '../../style/icons/Qiskit.svg';
+import migrateSvg from '../../style/icons/migration.svg';
 
 export const feedbackIcon = new LabIcon({
   name: 'qiskit:feedback',
@@ -27,4 +28,9 @@ export const feedbackIcon = new LabIcon({
 export const qiskitIcon = new LabIcon({
   name: 'qiskit:logo',
   svgstr: qiskitSvg
+});
+
+export const migrationIcon = new LabIcon({
+  name: 'qiskit:migrate',
+  svgstr: migrateSvg
 });

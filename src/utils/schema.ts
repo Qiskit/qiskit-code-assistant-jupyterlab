@@ -102,3 +102,19 @@ export interface IServiceResponse {
   url: string;
   is_openai: boolean;
 }
+
+export interface IMigrationResponse {
+  migration_id: string;
+  model_id: string;
+  migrated_code: string;
+  plan_steps?: string[];
+  final_thoughts?: string;
+  context?: any;
+  created_at: string;
+}
+
+export interface IMigrationReturn {
+  migratedCode: string;
+  migrationId: string;
+  input: string;
+}
