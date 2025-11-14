@@ -607,4 +607,179 @@ describe('API Service', () => {
       );
     });
   });
+
+  describe('postMigration', () => {
+    it('should successfully post migration request', async () => {
+      const code = 'from qiskit import QuantumCircuit';
+      const mockMigrationResponse = {
+        migration_id: 'migration-123',
+        model_id: 'model-456',
+        migrated_code: 'from qiskit import QuantumCircuit  # migrated',
+        created_at: '2025-01-01T00:00:00Z'
+      };
+      const mockResponse = {
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockMigrationResponse)
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      const result = await api.postMigration(code);
+
+      expect(mockRequestAPI).toHaveBeenCalledWith('migrate', {
+        method: 'POST',
+        body: JSON.stringify({ code })
+      });
+      expect(result).toEqual(mockMigrationResponse);
+    });
+
+    it('should handle errors when posting migration', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: 'Migration Error'
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.postMigration('test code')).rejects.toThrow(
+        'Migration Error'
+      );
+    });
+
+    it('should handle authentication errors', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: jest
+          .fn()
+          .mockResolvedValue({ detail: 'Invalid authentication token' })
+      } as any;
+
+      mockRequestAPI.mockResolvedValue(mockResponse);
+
+      await expect(api.postMigration('test code')).rejects.toThrow(
+        'Unauthorized'
+      );
+    });
+  });
+
+  describe('postMigrationStreaming', () => {
+    it('should successfully stream migration response', async () => {
+      const code = 'from qiskit import QuantumCircuit';
+      const streamChunks = [
+        'data: {"migration_id":"id-1","migrated_code":"from qiskit "}\n',
+        'data: {"migration_id":"id-1","migrated_code":"import QuantumCircuit"}\n'
+      ];
+
+      async function* mockStreamGenerator() {
+        for (const chunk of streamChunks) {
+          yield chunk;
+        }
+      }
+
+      mockRequestAPIStreaming.mockReturnValue(mockStreamGenerator() as any);
+
+      const results = [];
+      for await (const chunk of api.postMigrationStreaming(code)) {
+        results.push(chunk);
+      }
+
+      expect(mockRequestAPIStreaming).toHaveBeenCalledWith('migrate', {
+        method: 'POST',
+        body: JSON.stringify({ code, stream: true })
+      });
+      expect(results).toHaveLength(2);
+      expect(results[0]).toEqual({
+        migration_id: 'id-1',
+        migrated_code: 'from qiskit '
+      });
+      expect(results[1]).toEqual({
+        migration_id: 'id-1',
+        migrated_code: 'import QuantumCircuit'
+      });
+    });
+
+    it('should handle malformed JSON chunks gracefully', async () => {
+      const code = 'test code';
+      const streamChunks = [
+        'data: {"migration_id":"id-1","migrated_code":"valid"}\n',
+        'data: {invalid json}\n',
+        'data: {"migration_id":"id-1","migrated_code":"more valid"}\n'
+      ];
+
+      async function* mockStreamGenerator() {
+        for (const chunk of streamChunks) {
+          yield chunk;
+        }
+      }
+
+      mockRequestAPIStreaming.mockReturnValue(mockStreamGenerator() as any);
+
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation();
+
+      const results = [];
+      for await (const chunk of api.postMigrationStreaming(code)) {
+        results.push(chunk);
+      }
+
+      expect(results).toHaveLength(2);
+      expect(results[0].migrated_code).toBe('valid');
+      expect(results[1].migrated_code).toBe('more valid');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error parsing JSON')
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should skip non-data lines in stream', async () => {
+      const code = 'test code';
+      const streamChunks = [
+        ': comment line\n',
+        'data: {"migration_id":"id-1","migrated_code":"valid"}\n',
+        '\n',
+        'event: migration\n',
+        'data: {"migration_id":"id-1","migrated_code":"also valid"}\n'
+      ];
+
+      async function* mockStreamGenerator() {
+        for (const chunk of streamChunks) {
+          yield chunk;
+        }
+      }
+
+      mockRequestAPIStreaming.mockReturnValue(mockStreamGenerator() as any);
+
+      const results = [];
+      for await (const chunk of api.postMigrationStreaming(code)) {
+        results.push(chunk);
+      }
+
+      expect(results).toHaveLength(2);
+      expect(results[0].migrated_code).toBe('valid');
+      expect(results[1].migrated_code).toBe('also valid');
+    });
+
+    it('should handle empty stream', async () => {
+      const code = 'test code';
+
+      async function* mockStreamGenerator() {
+        // Empty generator
+        return;
+      }
+
+      mockRequestAPIStreaming.mockReturnValue(mockStreamGenerator() as any);
+
+      const results = [];
+      for await (const chunk of api.postMigrationStreaming(code)) {
+        results.push(chunk);
+      }
+
+      expect(results).toHaveLength(0);
+    });
+  });
 });
