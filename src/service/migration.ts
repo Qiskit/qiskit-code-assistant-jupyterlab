@@ -96,6 +96,42 @@ async function* migrationPromiseStreaming(
 }
 
 /**
+ * Checks if the migration operation was aborted
+ * @param signal Optional AbortSignal to check
+ * @throws Error if the operation was cancelled
+ */
+function checkAbortSignal(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new Error('Migration cancelled');
+  }
+}
+
+/**
+ * Validates and extracts code from a cell
+ * @param cell The cell to validate
+ * @returns The cell's source code
+ * @throws Error if the cell contains no code to migrate
+ */
+function validateAndGetCellCode(cell: Cell): string {
+  const code = cell.model.sharedModel.getSource();
+  if (!code || !code.trim()) {
+    throw new Error('Cell contains no code to migrate');
+  }
+  return code;
+}
+
+/**
+ * Validates a migration response
+ * @param response The migration response to validate
+ * @throws Error if the response is invalid
+ */
+function validateMigrationResponse(response: IMigrationReturn): void {
+  if (!response || !response.migratedCode) {
+    throw new Error('Received invalid migration response');
+  }
+}
+
+/**
  * Migrates a single cell using non-streaming migration
  * @param nb_cell The notebook cell to migrate
  * @param signal Optional AbortSignal to cancel the migration
@@ -105,21 +141,11 @@ async function cellMigration(
   signal?: AbortSignal
 ): Promise<void> {
   try {
-    // Check if operation was aborted before starting
-    if (signal?.aborted) {
-      throw new Error('Migration cancelled');
-    }
-
-    const code = nb_cell.model.sharedModel.getSource();
-    if (!code || !code.trim()) {
-      throw new Error('Cell contains no code to migrate');
-    }
+    checkAbortSignal(signal);
+    const code = validateAndGetCellCode(nb_cell);
 
     const migrationResponse: IMigrationReturn = await migrationPromise(code);
-
-    if (!migrationResponse || !migrationResponse.migratedCode) {
-      throw new Error('Received invalid migration response');
-    }
+    validateMigrationResponse(migrationResponse);
 
     if (migrationResponse.migratedCode.trim() === code.trim()) {
       Notification.warning('No code was found that needed to be migrated', {
@@ -149,15 +175,8 @@ async function cellMigrationStreaming(
   signal?: AbortSignal
 ): Promise<void> {
   try {
-    // Check if operation was aborted before starting
-    if (signal?.aborted) {
-      throw new Error('Migration cancelled');
-    }
-
-    const code = nb_cell.model.sharedModel.getSource();
-    if (!code || !code.trim()) {
-      throw new Error('Cell contains no code to migrate');
-    }
+    checkAbortSignal(signal);
+    const code = validateAndGetCellCode(nb_cell);
 
     const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
       migrationPromiseStreaming(code);
@@ -166,10 +185,8 @@ async function cellMigrationStreaming(
     let hasContent = false;
 
     for await (const chunk of migrationResponseGenerator) {
-      // Check for abort during streaming
-      if (signal?.aborted) {
-        throw new Error('Migration cancelled');
-      }
+      checkAbortSignal(signal);
+
       if (!chunk || chunk.migratedCode === undefined) {
         console.warn('Received invalid chunk in streaming response');
         continue;
@@ -214,10 +231,7 @@ async function notebookMigration(
   signal?: AbortSignal
 ): Promise<void> {
   try {
-    // Check if operation was aborted before starting
-    if (signal?.aborted) {
-      throw new Error('Migration cancelled');
-    }
+    checkAbortSignal(signal);
 
     if (!codeCellsText || codeCellsText.length === 0) {
       throw new Error('No code cells provided for migration');
@@ -227,9 +241,7 @@ async function notebookMigration(
     const migrationResponse: IMigrationReturn =
       await migrationPromise(combinedCode);
 
-    if (!migrationResponse || !migrationResponse.migratedCode) {
-      throw new Error('Received invalid migration response');
-    }
+    validateMigrationResponse(migrationResponse);
 
     if (migrationResponse.migratedCode.trim() === combinedCode.trim()) {
       Notification.warning('No code was found that needed to be migrated', {
@@ -283,10 +295,7 @@ async function notebookMigrationStreaming(
   signal?: AbortSignal
 ): Promise<void> {
   try {
-    // Check if operation was aborted before starting
-    if (signal?.aborted) {
-      throw new Error('Migration cancelled');
-    }
+    checkAbortSignal(signal);
 
     if (!codeCellsText || codeCellsText.length === 0) {
       throw new Error('No code cells provided for migration');
@@ -302,10 +311,7 @@ async function notebookMigrationStreaming(
     let hasReceivedData = false;
 
     for await (const chunk of migrationResponseGenerator) {
-      // Check for abort during streaming
-      if (signal?.aborted) {
-        throw new Error('Migration cancelled');
-      }
+      checkAbortSignal(signal);
 
       if (!chunk || chunk.migratedCode === undefined) {
         console.warn('Received invalid chunk in streaming response');
