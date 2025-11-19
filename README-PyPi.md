@@ -207,7 +207,7 @@ The extension includes a powerful code migration feature to help modernize your 
 
 #### Migrate Entire Notebook
 
-- Click the migration button (🔄) in the notebook toolbar (next to the cell type dropdown)
+- Click the migration button (![Migration icon](style/icons/migration.svg)) in the notebook toolbar (next to the cell type dropdown)
 - Confirm to migrate all code cells in your notebook
 - Markdown cells are preserved unchanged
 
