@@ -38,11 +38,11 @@ const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB max buffer to prevent memory issues
  */
 function getMigratedCode(json: any): string {
   if (!json) {
-    throw Error("Received invalid migration response")
+    throw Error('Received invalid migration response');
   } else if (json.error) {
-    throw Error(json.error)
-  } else if (!("migrated_code" in json)) {
-    throw Error("Received invalid migration response")
+    throw Error(json.error);
+  } else if (!('migrated_code' in json)) {
+    throw Error('Received invalid migration response');
   } else {
     return json.migrated_code ?? '';
   }
