@@ -161,6 +161,9 @@ async function cellMigration(
       });
     } else {
       nb_cell.model.sharedModel.setSource(migrationResponse.migratedCode);
+      Notification.success('Cell successfully migrated', {
+        autoClose: 5000
+      });
     }
   } catch (error) {
     const errorMessage =
@@ -186,11 +189,18 @@ async function cellMigrationStreaming(
     checkAbortSignal(signal);
     const code = validateAndGetCellCode(nb_cell);
 
+    console.log('[Migration] Planning migration...');
+    let currentNotificationId = Notification.info('Planning migration...', {
+      autoClose: false
+    });
+
     const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
       migrationPromiseStreaming(code);
 
     let clearedCell = false;
     let hasContent = false;
+    let migratedCode = '';
+    let step = 0;
 
     for await (const chunk of migrationResponseGenerator) {
       checkAbortSignal(signal);
@@ -200,6 +210,31 @@ async function cellMigrationStreaming(
         continue;
       }
 
+      // Show progress messages at different stages
+      if (step === 0 && chunk.migratedCode) {
+        console.log(
+          '[Migration] Reviewing migration... (step 0->1, migratedCode length:',
+          migratedCode.length,
+          ')'
+        );
+        Notification.dismiss(currentNotificationId);
+        currentNotificationId = Notification.info('Reviewing migration...', {
+          autoClose: false
+        });
+        step = 1;
+      } else if (step === 1 && migratedCode.length > 50) {
+        console.log(
+          '[Migration] Returning response... (step 1->2, migratedCode length:',
+          migratedCode.length,
+          ')'
+        );
+        Notification.dismiss(currentNotificationId);
+        currentNotificationId = Notification.info('Returning response...', {
+          autoClose: false
+        });
+        step = 2;
+      }
+
       if (!clearedCell && chunk.migratedCode) {
         nb_cell.model.sharedModel.source = '';
         clearedCell = true;
@@ -207,13 +242,21 @@ async function cellMigrationStreaming(
 
       if (chunk.migratedCode) {
         nb_cell.model.sharedModel.source += chunk.migratedCode;
+        migratedCode += chunk.migratedCode;
         hasContent = true;
       }
     }
 
+    // Dismiss the progress notification before showing final status
+    Notification.dismiss(currentNotificationId);
+
     if (!hasContent) {
       Notification.warning('No migrated code was received', {
         autoClose: false
+      });
+    } else {
+      Notification.success('Cell successfully migrated', {
+        autoClose: 5000
       });
     }
   } catch (error) {
@@ -279,6 +322,10 @@ async function notebookMigration(
         }
       }
     }
+
+    Notification.success('Notebook successfully migrated', {
+      autoClose: 5000
+    });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
@@ -309,6 +356,11 @@ async function notebookMigrationStreaming(
       throw new Error('No code cells provided for migration');
     }
 
+    console.log('[Migration] Planning migration...');
+    let currentNotificationId = Notification.info('Planning migration...', {
+      autoClose: false
+    });
+
     const combinedCode = codeCellsText.join('\n\n');
     const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
       migrationPromiseStreaming(combinedCode);
@@ -317,6 +369,8 @@ async function notebookMigrationStreaming(
     let buffer = '';
     const cellContentMap = new Map<number, string>();
     let hasReceivedData = false;
+    let fullMigratedCode = '';
+    let step = 0;
 
     for await (const chunk of migrationResponseGenerator) {
       checkAbortSignal(signal);
@@ -326,8 +380,34 @@ async function notebookMigrationStreaming(
         continue;
       }
 
+      // Show progress messages at different stages
+      if (step === 0 && chunk.migratedCode) {
+        console.log(
+          '[Migration] Reviewing migration... (step 0->1, fullMigratedCode length:',
+          fullMigratedCode.length,
+          ')'
+        );
+        Notification.dismiss(currentNotificationId);
+        currentNotificationId = Notification.info('Reviewing migration...', {
+          autoClose: false
+        });
+        step = 1;
+      } else if (step === 1 && fullMigratedCode.length > 100) {
+        console.log(
+          '[Migration] Returning response... (step 1->2, fullMigratedCode length:',
+          fullMigratedCode.length,
+          ')'
+        );
+        Notification.dismiss(currentNotificationId);
+        currentNotificationId = Notification.info('Returning response...', {
+          autoClose: false
+        });
+        step = 2;
+      }
+
       hasReceivedData = true;
       buffer += chunk.migratedCode;
+      fullMigratedCode += chunk.migratedCode;
 
       // Protect against unbounded buffer growth
       if (buffer.length > MAX_BUFFER_SIZE) {
@@ -408,9 +488,16 @@ async function notebookMigrationStreaming(
       }
     }
 
+    // Dismiss the progress notification before showing final status
+    Notification.dismiss(currentNotificationId);
+
     if (!hasReceivedData) {
       throw new Error('No data received from streaming migration');
     }
+
+    Notification.success('Notebook successfully migrated', {
+      autoClose: 5000
+    });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
