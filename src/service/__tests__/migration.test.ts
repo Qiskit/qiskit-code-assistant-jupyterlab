@@ -128,7 +128,7 @@ describe('Migration Service', () => {
       await migrateNotebookCell(mockCell);
 
       expect(mockShowDialog).toHaveBeenCalledWith({
-        body: 'Migrate the current notebook cell?',
+        body: 'Do you want to migrate the current notebook cell?',
         buttons: expect.any(Array)
       });
       expect(mockPostMigration).not.toHaveBeenCalled();
@@ -238,7 +238,7 @@ describe('Migration Service', () => {
       await migrateNotebookCell(mockCell, false);
 
       expect(Notification.warning).toHaveBeenCalledWith(
-        'No code was found that needed to be migrated',
+        'No code was found in the cell that needed to be migrated',
         { autoClose: false }
       );
     });
@@ -279,7 +279,7 @@ describe('Migration Service', () => {
       await migrateNotebook(mockNotebook);
 
       expect(mockShowDialog).toHaveBeenCalledWith({
-        body: 'Migrate the entire notebook?',
+        body: 'Do you want to migrate the entire notebook?',
         buttons: expect.any(Array)
       });
       expect(mockPostMigration).not.toHaveBeenCalled();

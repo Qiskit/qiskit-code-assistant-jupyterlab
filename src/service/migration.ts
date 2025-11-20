@@ -140,14 +140,25 @@ function validateMigrationResponse(response: IMigrationReturn): void {
 }
 
 /**
+ * Interface for migration result with metadata
+ */
+interface IMigrationResult {
+  success: boolean;
+  migrationId?: string;
+  input?: string;
+  migratedCode?: string;
+}
+
+/**
  * Migrates a single cell using non-streaming migration
  * @param nb_cell The notebook cell to migrate
  * @param signal Optional AbortSignal to cancel the migration
+ * @returns Migration result with success status and metadata
  */
 async function cellMigration(
   nb_cell: Cell,
   signal?: AbortSignal
-): Promise<void> {
+): Promise<IMigrationResult> {
   try {
     checkAbortSignal(signal);
     const code = validateAndGetCellCode(nb_cell);
@@ -156,14 +167,21 @@ async function cellMigration(
     validateMigrationResponse(migrationResponse);
 
     if (migrationResponse.migratedCode.trim() === code.trim()) {
-      Notification.warning('No code was found that needed to be migrated', {
-        autoClose: false
-      });
+      Notification.warning(
+        'No code was found in the cell that needed to be migrated',
+        {
+          autoClose: false
+        }
+      );
+      return { success: false };
     } else {
       nb_cell.model.sharedModel.setSource(migrationResponse.migratedCode);
-      Notification.success('Cell successfully migrated', {
-        autoClose: 5000
-      });
+      return {
+        success: true,
+        migrationId: migrationResponse.migrationId,
+        input: code,
+        migratedCode: migrationResponse.migratedCode
+      };
     }
   } catch (error) {
     const errorMessage =
@@ -180,11 +198,12 @@ async function cellMigration(
  * Migrates a single cell using streaming migration for real-time updates
  * @param nb_cell The notebook cell to migrate
  * @param signal Optional AbortSignal to cancel the migration
+ * @returns Migration result with success status and metadata
  */
 async function cellMigrationStreaming(
   nb_cell: Cell,
   signal?: AbortSignal
-): Promise<void> {
+): Promise<IMigrationResult> {
   try {
     checkAbortSignal(signal);
     const code = validateAndGetCellCode(nb_cell);
@@ -199,6 +218,7 @@ async function cellMigrationStreaming(
 
     let clearedCell = false;
     let hasContent = false;
+    let migrationId = '';
     let migratedCode = '';
     let step = 0;
 
@@ -235,6 +255,10 @@ async function cellMigrationStreaming(
         step = 2;
       }
 
+      if (!migrationId && chunk.migrationId) {
+        migrationId = chunk.migrationId;
+      }
+
       if (!clearedCell && chunk.migratedCode) {
         nb_cell.model.sharedModel.source = '';
         clearedCell = true;
@@ -254,11 +278,16 @@ async function cellMigrationStreaming(
       Notification.warning('No migrated code was received', {
         autoClose: false
       });
-    } else {
-      Notification.success('Cell successfully migrated', {
-        autoClose: 5000
-      });
+      return { success: false };
     }
+
+    console.log('[Migration] Migration completed successfully');
+    return {
+      success: true,
+      migrationId,
+      input: code,
+      migratedCode
+    };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
@@ -275,12 +304,13 @@ async function cellMigrationStreaming(
  * @param notebookCells Array of notebook cells
  * @param codeCellsText Array of code cell texts with cell markers
  * @param signal Optional AbortSignal to cancel the migration
+ * @returns Migration result with success status and metadata
  */
 async function notebookMigration(
   notebookCells: readonly Cell[],
   codeCellsText: string[],
   signal?: AbortSignal
-): Promise<void> {
+): Promise<IMigrationResult> {
   try {
     checkAbortSignal(signal);
 
@@ -295,10 +325,13 @@ async function notebookMigration(
     validateMigrationResponse(migrationResponse);
 
     if (migrationResponse.migratedCode.trim() === combinedCode.trim()) {
-      Notification.warning('No code was found that needed to be migrated', {
-        autoClose: false
-      });
-      return;
+      Notification.warning(
+        'No code was found in the notebook that needed to be migrated',
+        {
+          autoClose: false
+        }
+      );
+      return { success: false };
     }
 
     const migratedCodeCells =
@@ -323,9 +356,12 @@ async function notebookMigration(
       }
     }
 
-    Notification.success('Notebook successfully migrated', {
-      autoClose: 5000
-    });
+    return {
+      success: true,
+      migrationId: migrationResponse.migrationId,
+      input: combinedCode,
+      migratedCode: migrationResponse.migratedCode
+    };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
@@ -343,12 +379,13 @@ async function notebookMigration(
  * @param notebookCells Array of notebook cells
  * @param codeCellsText Array of code cell texts with cell markers
  * @param signal Optional AbortSignal to cancel the migration
+ * @returns Migration result with success status and metadata
  */
 async function notebookMigrationStreaming(
   notebookCells: readonly Cell[],
   codeCellsText: string[],
   signal?: AbortSignal
-): Promise<void> {
+): Promise<IMigrationResult> {
   try {
     checkAbortSignal(signal);
 
@@ -369,6 +406,7 @@ async function notebookMigrationStreaming(
     let buffer = '';
     const cellContentMap = new Map<number, string>();
     let hasReceivedData = false;
+    let migrationId = '';
     let fullMigratedCode = '';
     let step = 0;
 
@@ -403,6 +441,10 @@ async function notebookMigrationStreaming(
           autoClose: false
         });
         step = 2;
+      }
+
+      if (!migrationId && chunk.migrationId) {
+        migrationId = chunk.migrationId;
       }
 
       hasReceivedData = true;
@@ -495,9 +537,13 @@ async function notebookMigrationStreaming(
       throw new Error('No data received from streaming migration');
     }
 
-    Notification.success('Notebook successfully migrated', {
-      autoClose: 5000
-    });
+    console.log('[Migration] Migration completed successfully');
+    return {
+      success: true,
+      migrationId,
+      input: combinedCode,
+      migratedCode: fullMigratedCode
+    };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
@@ -532,7 +578,7 @@ export async function migrateNotebookCell(
 
   try {
     const result = await showDialog({
-      body: 'Migrate the current notebook cell?',
+      body: 'Do you want to migrate the current notebook cell?',
       buttons: [
         Dialog.cancelButton({ label: 'No' }),
         Dialog.okButton({ label: 'Yes' })
@@ -554,10 +600,17 @@ export async function migrateNotebookCell(
       } else {
         await checkAPIToken();
 
+        let migrationResult: IMigrationResult;
         if (stream) {
-          await cellMigrationStreaming(nb_cell);
+          migrationResult = await cellMigrationStreaming(nb_cell);
         } else {
-          await cellMigration(nb_cell);
+          migrationResult = await cellMigration(nb_cell);
+        }
+
+        if (migrationResult.success) {
+          Notification.success('Cell successfully migrated', {
+            autoClose: 5000
+          });
         }
       }
     }
@@ -591,7 +644,7 @@ export async function migrateNotebook(
   const cells = notebook.content.widgets;
 
   const result = await showDialog({
-    body: 'Migrate the entire notebook?',
+    body: 'Do you want to migrate the entire notebook?',
     buttons: [
       Dialog.cancelButton({ label: 'No' }),
       Dialog.okButton({ label: 'Yes' })
@@ -619,10 +672,17 @@ export async function migrateNotebook(
       } else {
         await checkAPIToken();
 
+        let migrationResult: IMigrationResult;
         if (stream) {
-          await notebookMigrationStreaming(cells, codeCells);
+          migrationResult = await notebookMigrationStreaming(cells, codeCells);
         } else {
-          await notebookMigration(cells, codeCells);
+          migrationResult = await notebookMigration(cells, codeCells);
+        }
+
+        if (migrationResult.success) {
+          Notification.success('Notebook successfully migrated', {
+            autoClose: 5000
+          });
         }
       }
     } catch (error) {
