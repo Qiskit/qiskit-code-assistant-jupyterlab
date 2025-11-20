@@ -17,6 +17,11 @@
         "name": "prompt-feedback",
         "command": "qiskit-code-assistant:prompt-feedback",
         "rank": 0
+      },
+      {
+        "name": "migrate-code",
+        "command": "qiskit-code-assistant:migrate-code",
+        "rank": 1
       }
     ]
   },

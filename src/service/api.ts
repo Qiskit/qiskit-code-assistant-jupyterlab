@@ -19,6 +19,7 @@ import { Notification } from '@jupyterlab/apputils';
 import { requestAPI, requestAPIStreaming } from '../utils/handler';
 import {
   IFeedbackResponse,
+  IMigrationResponse,
   IModelDisclaimer,
   IModelInfo,
   IModelPromptResponse,
@@ -203,7 +204,6 @@ export async function postModelPrompt(
   }).then(async response => {
     if (response.ok) {
       const promptRes = await response.json();
-      console.debug('prompt:', promptRes);
       return promptRes;
     } else {
       notifyInvalid(response);
@@ -481,4 +481,53 @@ export async function deleteClearCredentialSelection(): Promise<void> {
       throw Error(response.statusText);
     }
   });
+}
+
+// POST /migrate
+export async function postMigration(code: string): Promise<IMigrationResponse> {
+  return await requestAPI('migrate', {
+    method: 'POST',
+    body: JSON.stringify({ code })
+  }).then(async response => {
+    if (response.ok) {
+      const promptRes = await response.json();
+      return promptRes;
+    } else {
+      notifyInvalid(response);
+      console.error(
+        'Error sending prompt',
+        response.status,
+        response.statusText
+      );
+      throw Error(response.statusText);
+    }
+  });
+}
+
+// POST /migrate
+export async function* postMigrationStreaming(
+  code: string
+): AsyncGenerator<IMigrationResponse> {
+  const response = await requestAPIStreaming('migrate', {
+    method: 'POST',
+    body: JSON.stringify({ code, stream: true })
+  });
+
+  for await (const chunk of response) {
+    // parse & transform the streaming data chunk
+    const lines = chunk.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith(STREAM_DATA_PREFIX)) {
+        try {
+          // remove 'data: ' prefix and parse remaining string
+          const data = JSON.parse(line.substring(STREAM_DATA_PREFIX.length));
+          yield data;
+        } catch (error) {
+          // JSON parsing errors
+          console.error(`Error parsing JSON: ${error}`);
+        }
+      }
+    }
+  }
 }
