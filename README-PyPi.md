@@ -201,13 +201,13 @@ The extension includes a powerful code migration feature to help modernize your 
 
 #### Migrate a Single Cell
 
-- Right-click on a code cell and select "Migrate code" from the context menu
+- Click the ✨ sparkle button in a code cell's toolbar
 - Confirm the migration in the dialog
 - The cell content will be automatically updated with migrated code
 
 #### Migrate Entire Notebook
 
-- Click the migration button (![Migration icon](style/icons/migration.svg)) in the notebook toolbar (next to the cell type dropdown)
+- Click the ✨ sparkle button in the notebook toolbar (next to the cell type dropdown)
 - Confirm to migrate all code cells in your notebook
 - Markdown cells are preserved unchanged
 

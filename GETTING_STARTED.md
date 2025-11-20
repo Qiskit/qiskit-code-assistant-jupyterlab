@@ -138,14 +138,13 @@ The Qiskit Code Assistant includes a powerful code migration feature that helps 
 #### How to Use
 
 1. **Migrate a Single Cell**:
-   - Select a code cell in your notebook
-   - Right-click to open the context menu
-   - Select "Migrate code"
+   - Locate the ✨ sparkle button in a code cell's toolbar
+   - Click the sparkle button to start migration
    - Confirm the migration dialog
    - The cell content will be updated with migrated code
 
 2. **Migrate Entire Notebook**:
-   - Click the migration button (![Migration icon](style/icons/migration.svg)) in the notebook toolbar (located next to the cell type dropdown)
+   - Click the ✨ sparkle button in the notebook toolbar (located next to the cell type dropdown)
    - Confirm the migration dialog
    - All code cells will be migrated automatically
    - Markdown cells are preserved unchanged

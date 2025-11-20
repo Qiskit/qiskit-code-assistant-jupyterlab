@@ -91,8 +91,8 @@ pip uninstall qiskit_code_assistant_jupyterlab
 
 The extension includes a code migration feature that helps you migrate legacy Qiskit code to newer versions:
 
-- **Single Cell Migration**: Right-click on a code cell and select "Migrate code" from the context menu to migrate just that cell
-- **Full Notebook Migration**: Click the migration button in the notebook toolbar (next to the cell type dropdown) to migrate all code cells in the notebook
+- **Single Cell Migration**: Click the ✨ sparkle button in a code cell's toolbar to migrate just that cell
+- **Full Notebook Migration**: Click the ✨ sparkle button in the notebook toolbar (next to the cell type dropdown) to migrate all code cells in the notebook
 - **Streaming Support**: Real-time updates as the migration processes your code (configurable via settings)
 
 The migration feature automatically:
