@@ -24,6 +24,9 @@ import { Cell } from '@jupyterlab/cells';
 import { NotebookPanel } from '@jupyterlab/notebook';
 
 // Constants
+const NB_MAGIC_CMD = '%';
+const NB_SHELL_CMD = '!';
+const NB_CELL_MAGIC_MARKER_PREFIX = '### NB_CELL_MAGIC:';
 const NB_CELL_MARKER_PREFIX = '### Notebook_Cell_';
 const NB_CELL_MARKER_REGEX = /(?=### Notebook_Cell_\d+\n)/;
 const NB_CELL_ID_REGEX = /### Notebook_Cell_\d+\n/;
@@ -132,13 +135,23 @@ function getMigratedCode(json: MigrationAPIChunk): string {
 }
 
 /**
- * Validates if a cell is a code cell and optionally checks if it has content
+ * Validates if a cell is
+ * - a cell of type 'code'
+ * - not a running a shell command
+ * - (optionally) not empty
  * @param nb_cell The cell to validate
  * @param allow_empty Whether to allow empty cells
  * @returns true if the cell is valid for migration
  */
 function isValidCodeCell(nb_cell: Cell, allow_empty: boolean = false): boolean {
+  // non-code cells
   if (nb_cell.model.type !== 'code') {
+    return false;
+  }
+
+  const code = nb_cell.model.sharedModel.getSource().trim();
+  // code cells running shell commands
+  if (code.startsWith(NB_SHELL_CMD)) {
     return false;
   }
 
@@ -146,8 +159,21 @@ function isValidCodeCell(nb_cell: Cell, allow_empty: boolean = false): boolean {
     return true;
   }
 
-  const code = nb_cell.model.sharedModel.getSource();
   return !!code.trim();
+}
+
+/**
+ * Prepends the cell text with cell marker prefix (i.e., `### Notebook_Cell_x`)
+ * @param cellText The text to add the prefix
+ * @param cellIndex The index number of the cell
+ * @returns The updated cell text
+ */
+function normalizeCellText(cellText: string, cellIndex: number): string {
+  if (cellText.trim().startsWith(NB_MAGIC_CMD)) {
+    return `${NB_CELL_MARKER_PREFIX}${cellIndex}\n${NB_CELL_MAGIC_MARKER_PREFIX}${cellText}`;
+  } else {
+    return `${NB_CELL_MARKER_PREFIX}${cellIndex}\n${cellText}`;
+  }
 }
 
 /**
@@ -208,7 +234,14 @@ function validateAndGetCellCode(cell: Cell): string {
   if (!code || !code.trim()) {
     throw new Error('Cell contains no code to migrate');
   }
-  return code;
+  if (code.trim().startsWith(NB_SHELL_CMD)) {
+    throw new Error('Cannot migrate cells containing shell commands');
+  }
+  if (code.trim().startsWith(NB_MAGIC_CMD)) {
+    return `${NB_CELL_MAGIC_MARKER_PREFIX}${code}`;
+  } else {
+    return code;
+  }
 }
 
 /**
@@ -249,7 +282,9 @@ function updateCellSafely(
   content: string
 ): boolean {
   if (index >= 0 && index < cells.length) {
-    cells[index].model.sharedModel.setSource(content);
+    cells[index].model.sharedModel.setSource(
+      content.replace(NB_CELL_MAGIC_MARKER_PREFIX, '')
+    );
     return true;
   } else {
     console.warn(`Cell index ${index} out of bounds, skipping update`);
@@ -325,7 +360,9 @@ async function cellMigration(
       );
       return { success: false };
     } else {
-      nb_cell.model.sharedModel.setSource(migrationResponse.migratedCode);
+      nb_cell.model.sharedModel.setSource(
+        migrationResponse.migratedCode.replace(NB_CELL_MAGIC_MARKER_PREFIX, '')
+      );
       return {
         success: true,
         migrationId: migrationResponse.migrationId,
@@ -396,6 +433,17 @@ async function cellMigrationStreaming(
 
       if (chunk.migratedCode) {
         nb_cell.model.sharedModel.source += chunk.migratedCode;
+        if (
+          nb_cell.model.sharedModel.source
+            .trimStart()
+            .startsWith(NB_CELL_MAGIC_MARKER_PREFIX)
+        ) {
+          nb_cell.model.sharedModel.source =
+            nb_cell.model.sharedModel.source.replace(
+              NB_CELL_MAGIC_MARKER_PREFIX,
+              ''
+            );
+        }
         migratedCode += chunk.migratedCode;
         hasContent = true;
       }
@@ -732,9 +780,11 @@ export async function migrateNotebook(
 
       for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
         if (isValidCodeCell(cells[cellIndex])) {
-          // copy code cell text and prefix with cell marker (i.e., `### Notebook_Cell_x`)
           codeCells.push(
-            `${NB_CELL_MARKER_PREFIX}${cellIndex}\n${cells[cellIndex].model.sharedModel.getSource()}`
+            normalizeCellText(
+              cells[cellIndex].model.sharedModel.getSource(),
+              cellIndex
+            )
           );
         }
       }

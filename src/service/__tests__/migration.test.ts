@@ -206,6 +206,22 @@ describe('Migration Service', () => {
       expect(mockPostMigration).not.toHaveBeenCalled();
     });
 
+    it('should show warning if cell has shell command', async () => {
+      const mockCell = createMockCell('code', '!pip list');
+
+      mockShowDialog.mockResolvedValue({
+        button: { accept: true }
+      } as any);
+
+      await migrateNotebookCell(mockCell);
+
+      expect(Notification.warning).toHaveBeenCalledWith(
+        'Notebook cell is not a code cell or contains no code to migrate',
+        { autoClose: false }
+      );
+      expect(mockPostMigration).not.toHaveBeenCalled();
+    });
+
     it('should show warning if cell has no code', async () => {
       const mockCell = createMockCell('code', '   ');
 
@@ -367,6 +383,31 @@ describe('Migration Service', () => {
       const markdownCell = createMockCell('markdown', '# Header');
       const codeCell = createMockCell('code', 'print("test")');
       const cells = [markdownCell, codeCell];
+      const mockNotebook = createMockNotebook(cells);
+
+      mockShowDialog.mockResolvedValue({
+        button: { accept: true }
+      } as any);
+
+      mockPostMigration.mockResolvedValue({
+        migration_id: 'test-id',
+        model_id: 'model-id',
+        migrated_code: '### Notebook_Cell_1\nprint("test")',
+        created_at: '2025-01-01T00:00:00Z'
+      });
+
+      await migrateNotebook(mockNotebook, false);
+
+      // Should only process the code cell
+      expect(mockPostMigration).toHaveBeenCalledWith(
+        expect.stringContaining('### Notebook_Cell_1\nprint("test")')
+      );
+    });
+
+    it('should skip code cells with shell command when migrating notebook', async () => {
+      const shellCmdCell = createMockCell('code', '!pip list');
+      const codeCell = createMockCell('code', 'print("test")');
+      const cells = [shellCmdCell, codeCell];
       const mockNotebook = createMockNotebook(cells);
 
       mockShowDialog.mockResolvedValue({
