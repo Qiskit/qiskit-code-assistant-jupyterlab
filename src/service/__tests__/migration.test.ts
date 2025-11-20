@@ -36,8 +36,10 @@ jest.mock('../token');
 jest.mock('@jupyterlab/apputils', () => ({
   Notification: {
     error: jest.fn(),
-    info: jest.fn(),
-    warning: jest.fn()
+    info: jest.fn(() => 'notification-id'),
+    warning: jest.fn(),
+    success: jest.fn(),
+    dismiss: jest.fn()
   },
   showDialog: jest.fn(),
   Dialog: {
@@ -408,6 +410,56 @@ describe('Migration Service', () => {
       expect(StatusBarWidget.widget.stopLoadingStatus).toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
+    });
+
+    it('should show success notification after successful migration', async () => {
+      const cell1 = createMockCell('code', 'from qiskit import QuantumCircuit');
+      const cells = [cell1];
+      const mockNotebook = createMockNotebook(cells);
+
+      mockShowDialog.mockResolvedValue({
+        button: { accept: true }
+      } as any);
+
+      mockPostMigration.mockResolvedValue({
+        migration_id: 'test-id',
+        model_id: 'model-id',
+        migrated_code:
+          '### Notebook_Cell_0\nfrom qiskit import QuantumCircuit  # Updated',
+        created_at: '2025-01-01T00:00:00Z'
+      });
+
+      await migrateNotebook(mockNotebook, false);
+
+      expect(Notification.success).toHaveBeenCalledWith(
+        'Notebook successfully migrated',
+        { autoClose: 5000 }
+      );
+    });
+
+    it('should dismiss progress notifications during streaming', async () => {
+      const cells = [createMockCell('code', 'test')];
+      const mockNotebook = createMockNotebook(cells);
+
+      mockShowDialog.mockResolvedValue({
+        button: { accept: true }
+      } as any);
+
+      const streamChunks = [
+        {
+          migrationId: 'test-id',
+          migratedCode: '### Notebook_Cell_0\ntest',
+          input: 'test'
+        }
+      ];
+
+      mockPostMigrationStreaming.mockReturnValue(
+        createMockGenerator(streamChunks) as any
+      );
+
+      await migrateNotebook(mockNotebook, true);
+
+      expect(Notification.dismiss).toHaveBeenCalled();
     });
   });
 });
