@@ -602,7 +602,11 @@ async function notebookMigrationStreaming(
       // Update current cell with partial content for real-time feedback
       if (currentCellIndex !== -1 && buffer.length > 0) {
         const currentContent = cellContentMap.get(currentCellIndex) || '';
-        updateCellSafely(notebookCells, currentCellIndex, currentContent + buffer);
+        updateCellSafely(
+          notebookCells,
+          currentCellIndex,
+          currentContent + buffer
+        );
       }
     }
 

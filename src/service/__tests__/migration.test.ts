@@ -698,6 +698,7 @@ describe('Migration Service', () => {
         button: { accept: true }
       } as any);
 
+      // eslint-disable-next-line require-yield
       async function* errorGenerator() {
         throw new Error('Streaming error');
       }
