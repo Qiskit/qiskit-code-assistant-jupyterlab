@@ -172,7 +172,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     const streamingEnabled = settings.composite['enableStreaming'] as boolean;
 
     app.commands.addCommand(CommandIDs.migrateCode, {
-      label: 'Migrate code',
+      label: 'Migrate Qiskit code in this cell',
       icon: migrationIcon,
       execute: () =>
         migrateNotebookCell(notebookTracker.activeCell, streamingEnabled),
@@ -221,7 +221,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           onClick: () => {
             migrateNotebook(panel, streamingEnabled);
           },
-          tooltip: 'Migrate notebook code cells',
+          tooltip: 'Migrate Qiskit code in the notebook',
           icon: migrationIcon
         });
         // add migrate button before cell type dropdown
