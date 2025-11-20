@@ -29,6 +29,89 @@ const NB_CELL_MARKER_REGEX = /(?=### Notebook_Cell_\d+\n)/;
 const NB_CELL_ID_REGEX = /### Notebook_Cell_\d+\n/;
 const NB_CELL_INDEX_REGEX = /^### Notebook_Cell_(\d+)/;
 const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB max buffer to prevent memory issues
+const NOTIFICATION_THRESHOLD_CELL = 50; // bytes before showing "Returning response..." for cell migration
+const NOTIFICATION_THRESHOLD_NOTEBOOK = 100; // bytes before showing "Returning response..." for notebook migration
+
+// Types
+/**
+ * Represents a chunk from streaming migration API
+ * Note: Uses 'any' to handle varying response shapes from streaming API
+ */
+type MigrationAPIChunk = any;
+
+/**
+ * Interface for migration result with metadata
+ */
+interface IMigrationResult {
+  success: boolean;
+  migrationId?: string;
+  input?: string;
+  migratedCode?: string;
+}
+
+/**
+ * Manages notification lifecycle during migration operations
+ */
+class MigrationNotificationManager {
+  private currentId: string | null = null;
+  private step = 0;
+
+  /**
+   * Show initial "Planning migration..." notification
+   */
+  showPlanning(): void {
+    console.log('[Migration] Planning migration...');
+    this.currentId = Notification.info('Planning migration...', {
+      autoClose: false
+    });
+    this.step = 0;
+  }
+
+  /**
+   * Update to "Reviewing migration..." notification if conditions are met
+   * @param contentLength Current length of migrated content
+   */
+  updateToReviewing(contentLength: number): void {
+    if (this.step === 0 && contentLength > 0) {
+      console.log(
+        `[Migration] Reviewing migration... (step 0->1, length: ${contentLength})`
+      );
+      this.dismiss();
+      this.currentId = Notification.info('Reviewing migration...', {
+        autoClose: false
+      });
+      this.step = 1;
+    }
+  }
+
+  /**
+   * Update to "Returning response..." notification if conditions are met
+   * @param contentLength Current length of migrated content
+   * @param threshold Minimum content length to trigger update
+   */
+  updateToReturning(contentLength: number, threshold: number): void {
+    if (this.step === 1 && contentLength > threshold) {
+      console.log(
+        `[Migration] Returning response... (step 1->2, length: ${contentLength})`
+      );
+      this.dismiss();
+      this.currentId = Notification.info('Returning response...', {
+        autoClose: false
+      });
+      this.step = 2;
+    }
+  }
+
+  /**
+   * Dismiss the current notification
+   */
+  dismiss(): void {
+    if (this.currentId) {
+      Notification.dismiss(this.currentId);
+      this.currentId = null;
+    }
+  }
+}
 
 // Helper functions
 /**
@@ -36,7 +119,7 @@ const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB max buffer to prevent memory issues
  * @param json Migration response object
  * @returns The migrated code or empty string if not present
  */
-function getMigratedCode(json: any): string {
+function getMigratedCode(json: MigrationAPIChunk): string {
   if (!json) {
     throw Error('Received invalid migration response');
   } else if (json.error) {
@@ -140,13 +223,80 @@ function validateMigrationResponse(response: IMigrationReturn): void {
 }
 
 /**
- * Interface for migration result with metadata
+ * Parses cell index from cell marker string
+ * @param content Content containing cell marker
+ * @returns Cell index or null if parsing failed
  */
-interface IMigrationResult {
-  success: boolean;
-  migrationId?: string;
-  input?: string;
-  migratedCode?: string;
+function parseCellIndex(content: string): number | null {
+  const match = content.match(NB_CELL_INDEX_REGEX);
+  if (match && match[1]) {
+    const cellIndex = parseInt(match[1], 10);
+    return isNaN(cellIndex) ? null : cellIndex;
+  }
+  return null;
+}
+
+/**
+ * Safely updates a cell's content with bounds checking
+ * @param cells Array of cells
+ * @param index Cell index to update
+ * @param content New content for the cell
+ * @returns true if update succeeded, false if index out of bounds
+ */
+function updateCellSafely(
+  cells: readonly Cell[],
+  index: number,
+  content: string
+): boolean {
+  if (index >= 0 && index < cells.length) {
+    cells[index].model.sharedModel.setSource(content);
+    return true;
+  } else {
+    console.warn(`Cell index ${index} out of bounds, skipping update`);
+    return false;
+  }
+}
+
+/**
+ * Shows a migration confirmation dialog
+ * @param message Message to display in the dialog
+ * @returns Promise resolving to the dialog result
+ */
+async function showMigrationConfirmation(
+  message: string
+): Promise<Dialog.IResult<void>> {
+  return showDialog({
+    body: message,
+    buttons: [
+      Dialog.cancelButton({ label: 'No' }),
+      Dialog.okButton({ label: 'Yes' })
+    ]
+  });
+}
+
+/**
+ * Shows a success notification for completed migration
+ * @param entityType Type of entity that was migrated
+ */
+function showMigrationSuccess(entityType: 'Cell' | 'Notebook'): void {
+  Notification.success(`${entityType} successfully migrated`, {
+    autoClose: 5000
+  });
+}
+
+/**
+ * Executes an operation with loading status indicator
+ * Ensures loading status is cleared even if operation fails
+ * @param operation The async operation to execute
+ * @returns Promise resolving to the operation result
+ */
+async function withLoadingStatus<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    StatusBarWidget.widget.setLoadingStatus();
+    return await operation();
+  } finally {
+    StatusBarWidget.widget.stopLoadingStatus();
+  }
 }
 
 /**
@@ -204,14 +354,13 @@ async function cellMigrationStreaming(
   nb_cell: Cell,
   signal?: AbortSignal
 ): Promise<IMigrationResult> {
+  const notificationManager = new MigrationNotificationManager();
+
   try {
     checkAbortSignal(signal);
     const code = validateAndGetCellCode(nb_cell);
 
-    console.log('[Migration] Planning migration...');
-    let currentNotificationId = Notification.info('Planning migration...', {
-      autoClose: false
-    });
+    notificationManager.showPlanning();
 
     const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
       migrationPromiseStreaming(code);
@@ -220,7 +369,6 @@ async function cellMigrationStreaming(
     let hasContent = false;
     let migrationId = '';
     let migratedCode = '';
-    let step = 0;
 
     for await (const chunk of migrationResponseGenerator) {
       checkAbortSignal(signal);
@@ -230,30 +378,12 @@ async function cellMigrationStreaming(
         continue;
       }
 
-      // Show progress messages at different stages
-      if (step === 0 && chunk.migratedCode) {
-        console.log(
-          '[Migration] Reviewing migration... (step 0->1, migratedCode length:',
-          migratedCode.length,
-          ')'
-        );
-        Notification.dismiss(currentNotificationId);
-        currentNotificationId = Notification.info('Reviewing migration...', {
-          autoClose: false
-        });
-        step = 1;
-      } else if (step === 1 && migratedCode.length > 50) {
-        console.log(
-          '[Migration] Returning response... (step 1->2, migratedCode length:',
-          migratedCode.length,
-          ')'
-        );
-        Notification.dismiss(currentNotificationId);
-        currentNotificationId = Notification.info('Returning response...', {
-          autoClose: false
-        });
-        step = 2;
-      }
+      // Update progress notifications based on content length
+      notificationManager.updateToReviewing(migratedCode.length);
+      notificationManager.updateToReturning(
+        migratedCode.length,
+        NOTIFICATION_THRESHOLD_CELL
+      );
 
       if (!migrationId && chunk.migrationId) {
         migrationId = chunk.migrationId;
@@ -271,8 +401,7 @@ async function cellMigrationStreaming(
       }
     }
 
-    // Dismiss the progress notification before showing final status
-    Notification.dismiss(currentNotificationId);
+    notificationManager.dismiss();
 
     if (!hasContent) {
       Notification.warning('No migrated code was received', {
@@ -289,6 +418,7 @@ async function cellMigrationStreaming(
       migratedCode
     };
   } catch (error) {
+    notificationManager.dismiss();
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error in streaming cell migration:', error);
@@ -338,21 +468,13 @@ async function notebookMigration(
       migrationResponse.migratedCode.split(NB_CELL_MARKER_REGEX);
 
     for (let i = 0; i < migratedCodeCells.length; i++) {
-      // Use more specific regex to match cell marker
-      const match = migratedCodeCells[i].match(NB_CELL_INDEX_REGEX);
-      if (match && match[1]) {
-        const cellIndex = parseInt(match[1], 10);
-        if (cellIndex >= 0 && cellIndex < notebookCells.length) {
-          const migratedContent = migratedCodeCells[i].replace(
-            NB_CELL_ID_REGEX,
-            ''
-          );
-          notebookCells[cellIndex].model.sharedModel.setSource(migratedContent);
-        } else {
-          console.warn(
-            `Cell index ${cellIndex} out of bounds, skipping update`
-          );
-        }
+      const cellIndex = parseCellIndex(migratedCodeCells[i]);
+      if (cellIndex !== null) {
+        const migratedContent = migratedCodeCells[i].replace(
+          NB_CELL_ID_REGEX,
+          ''
+        );
+        updateCellSafely(notebookCells, cellIndex, migratedContent);
       }
     }
 
@@ -386,6 +508,8 @@ async function notebookMigrationStreaming(
   codeCellsText: string[],
   signal?: AbortSignal
 ): Promise<IMigrationResult> {
+  const notificationManager = new MigrationNotificationManager();
+
   try {
     checkAbortSignal(signal);
 
@@ -393,10 +517,7 @@ async function notebookMigrationStreaming(
       throw new Error('No code cells provided for migration');
     }
 
-    console.log('[Migration] Planning migration...');
-    let currentNotificationId = Notification.info('Planning migration...', {
-      autoClose: false
-    });
+    notificationManager.showPlanning();
 
     const combinedCode = codeCellsText.join('\n\n');
     const migrationResponseGenerator: AsyncGenerator<IMigrationReturn> =
@@ -408,7 +529,6 @@ async function notebookMigrationStreaming(
     let hasReceivedData = false;
     let migrationId = '';
     let fullMigratedCode = '';
-    let step = 0;
 
     for await (const chunk of migrationResponseGenerator) {
       checkAbortSignal(signal);
@@ -418,30 +538,12 @@ async function notebookMigrationStreaming(
         continue;
       }
 
-      // Show progress messages at different stages
-      if (step === 0 && chunk.migratedCode) {
-        console.log(
-          '[Migration] Reviewing migration... (step 0->1, fullMigratedCode length:',
-          fullMigratedCode.length,
-          ')'
-        );
-        Notification.dismiss(currentNotificationId);
-        currentNotificationId = Notification.info('Reviewing migration...', {
-          autoClose: false
-        });
-        step = 1;
-      } else if (step === 1 && fullMigratedCode.length > 100) {
-        console.log(
-          '[Migration] Returning response... (step 1->2, fullMigratedCode length:',
-          fullMigratedCode.length,
-          ')'
-        );
-        Notification.dismiss(currentNotificationId);
-        currentNotificationId = Notification.info('Returning response...', {
-          autoClose: false
-        });
-        step = 2;
-      }
+      // Update progress notifications based on content length
+      notificationManager.updateToReviewing(fullMigratedCode.length);
+      notificationManager.updateToReturning(
+        fullMigratedCode.length,
+        NOTIFICATION_THRESHOLD_NOTEBOOK
+      );
 
       if (!migrationId && chunk.migrationId) {
         migrationId = chunk.migrationId;
@@ -473,26 +575,17 @@ async function notebookMigrationStreaming(
           );
 
           // Update cell immediately for better streaming UX
-          if (
-            currentCellIndex >= 0 &&
-            currentCellIndex < notebookCells.length
-          ) {
-            notebookCells[currentCellIndex].model.sharedModel.setSource(
-              cellContentMap.get(currentCellIndex) || ''
-            );
-          } else {
-            console.warn(
-              `Cell index ${currentCellIndex} out of bounds during streaming`
-            );
-          }
+          updateCellSafely(
+            notebookCells,
+            currentCellIndex,
+            cellContentMap.get(currentCellIndex) || ''
+          );
         }
 
-        // Extract and parse new cell index using more specific regex
-        const markerMatch = buffer
-          .substring(markerPos)
-          .match(NB_CELL_INDEX_REGEX);
-        if (markerMatch && markerMatch[1]) {
-          currentCellIndex = parseInt(markerMatch[1], 10);
+        // Extract and parse new cell index
+        const newIndex = parseCellIndex(buffer.substring(markerPos));
+        if (newIndex !== null) {
+          currentCellIndex = newIndex;
           // Remove the processed part including the marker
           buffer = buffer
             .substring(markerPos)
@@ -509,11 +602,7 @@ async function notebookMigrationStreaming(
       // Update current cell with partial content for real-time feedback
       if (currentCellIndex !== -1 && buffer.length > 0) {
         const currentContent = cellContentMap.get(currentCellIndex) || '';
-        if (currentCellIndex >= 0 && currentCellIndex < notebookCells.length) {
-          notebookCells[currentCellIndex].model.sharedModel.setSource(
-            currentContent + buffer
-          );
-        }
+        updateCellSafely(notebookCells, currentCellIndex, currentContent + buffer);
       }
     }
 
@@ -523,15 +612,14 @@ async function notebookMigrationStreaming(
         currentCellIndex,
         (cellContentMap.get(currentCellIndex) || '') + buffer
       );
-      if (currentCellIndex >= 0 && currentCellIndex < notebookCells.length) {
-        notebookCells[currentCellIndex].model.sharedModel.setSource(
-          cellContentMap.get(currentCellIndex) || ''
-        );
-      }
+      updateCellSafely(
+        notebookCells,
+        currentCellIndex,
+        cellContentMap.get(currentCellIndex) || ''
+      );
     }
 
-    // Dismiss the progress notification before showing final status
-    Notification.dismiss(currentNotificationId);
+    notificationManager.dismiss();
 
     if (!hasReceivedData) {
       throw new Error('No data received from streaming migration');
@@ -545,6 +633,7 @@ async function notebookMigrationStreaming(
       migratedCode: fullMigratedCode
     };
   } catch (error) {
+    notificationManager.dismiss();
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Error during streaming notebook migration:', error);
@@ -577,48 +666,35 @@ export async function migrateNotebookCell(
   }
 
   try {
-    const result = await showDialog({
-      body: 'Do you want to migrate the current notebook cell?',
-      buttons: [
-        Dialog.cancelButton({ label: 'No' }),
-        Dialog.okButton({ label: 'Yes' })
-      ]
-    });
+    const result = await showMigrationConfirmation(
+      'Do you want to migrate the current notebook cell?'
+    );
 
     if (result.button.accept) {
-      // Show loading icon in status bar
-      StatusBarWidget.widget.setLoadingStatus();
-
-      // make sure notebook cell is code cell and has content
-      if (!isValidCodeCell(nb_cell)) {
-        Notification.warning(
-          'Notebook cell is not a code cell or contains no code to migrate',
-          {
-            autoClose: false
-          }
-        );
-      } else {
-        await checkAPIToken();
-
-        let migrationResult: IMigrationResult;
-        if (stream) {
-          migrationResult = await cellMigrationStreaming(nb_cell);
+      await withLoadingStatus(async () => {
+        // make sure notebook cell is code cell and has content
+        if (!isValidCodeCell(nb_cell)) {
+          Notification.warning(
+            'Notebook cell is not a code cell or contains no code to migrate',
+            {
+              autoClose: false
+            }
+          );
         } else {
-          migrationResult = await cellMigration(nb_cell);
-        }
+          await checkAPIToken();
 
-        if (migrationResult.success) {
-          Notification.success('Cell successfully migrated', {
-            autoClose: 5000
-          });
+          const migrationResult = stream
+            ? await cellMigrationStreaming(nb_cell)
+            : await cellMigration(nb_cell);
+
+          if (migrationResult.success) {
+            showMigrationSuccess('Cell');
+          }
         }
-      }
+      });
     }
   } catch (error) {
     console.error('Failed to run migration', error);
-  } finally {
-    // Remove loading icon in status bar
-    StatusBarWidget.widget.stopLoadingStatus();
   }
 }
 
@@ -640,56 +716,44 @@ export async function migrateNotebook(
   notebook: NotebookPanel,
   stream: boolean = false
 ): Promise<void> {
-  const codeCells = [];
   const cells = notebook.content.widgets;
 
-  const result = await showDialog({
-    body: 'Do you want to migrate the entire notebook?',
-    buttons: [
-      Dialog.cancelButton({ label: 'No' }),
-      Dialog.okButton({ label: 'Yes' })
-    ]
-  });
+  const result = await showMigrationConfirmation(
+    'Do you want to migrate the entire notebook?'
+  );
 
   if (result.button.accept) {
-    // Show loading icon in status bar
-    StatusBarWidget.widget.setLoadingStatus();
+    await withLoadingStatus(async () => {
+      const codeCells = [];
 
-    for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
-      if (isValidCodeCell(cells[cellIndex])) {
-        // copy code cell text and prefix with cell marker (i.e., `### Notebook_Cell_x`)
-        codeCells.push(
-          `${NB_CELL_MARKER_PREFIX}${cellIndex}\n${cells[cellIndex].model.sharedModel.getSource()}`
-        );
-      }
-    }
-
-    try {
-      if (codeCells.length === 0) {
-        Notification.warning('No code cells found to migrate', {
-          autoClose: false
-        });
-      } else {
-        await checkAPIToken();
-
-        let migrationResult: IMigrationResult;
-        if (stream) {
-          migrationResult = await notebookMigrationStreaming(cells, codeCells);
-        } else {
-          migrationResult = await notebookMigration(cells, codeCells);
+      for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
+        if (isValidCodeCell(cells[cellIndex])) {
+          // copy code cell text and prefix with cell marker (i.e., `### Notebook_Cell_x`)
+          codeCells.push(
+            `${NB_CELL_MARKER_PREFIX}${cellIndex}\n${cells[cellIndex].model.sharedModel.getSource()}`
+          );
         }
+      }
 
-        if (migrationResult.success) {
-          Notification.success('Notebook successfully migrated', {
-            autoClose: 5000
+      try {
+        if (codeCells.length === 0) {
+          Notification.warning('No code cells found to migrate', {
+            autoClose: false
           });
+        } else {
+          await checkAPIToken();
+
+          const migrationResult = stream
+            ? await notebookMigrationStreaming(cells, codeCells)
+            : await notebookMigration(cells, codeCells);
+
+          if (migrationResult.success) {
+            showMigrationSuccess('Notebook');
+          }
         }
+      } catch (error) {
+        console.error('Failed to process migration', error);
       }
-    } catch (error) {
-      console.error('Failed to process migration', error);
-    } finally {
-      // Remove loading icon in status bar
-      StatusBarWidget.widget.stopLoadingStatus();
-    }
+    });
   }
 }
