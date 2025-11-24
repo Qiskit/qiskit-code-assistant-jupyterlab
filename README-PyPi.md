@@ -222,7 +222,7 @@ The extension includes a code migration feature to help modernize your Qiskit co
 
 ## Terms of use
 
-- [End User License Agreement (EULA)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/blob/main/docs/EULA.md) acceptance required before starting to use the model acceptance required before starting to use the model
+- [End User License Agreement (EULA)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/blob/main/docs/EULA.md) acceptance required before starting to use the model
 - Terms of use: [https://quantum.ibm.com/terms](https://quantum.ibm.com/terms)
 - Privacy policy: [https://quantum.ibm.com/terms/privacy](https://quantum.ibm.com/terms/privacy)
 - Cloud Services Agreement [https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en](https://www.ibm.com/support/customer/csol/terms/?id=Z126-6304&cc=us&lc=en)
