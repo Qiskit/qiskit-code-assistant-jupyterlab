@@ -588,6 +588,41 @@ class CredentialsHandler(APIHandler):
         }))
 
 
+class MigrationHandler(APIHandler):
+    @tornado.web.authenticated
+    @tornado.gen.coroutine
+    def post(self):
+        request_body = self.get_json_body()
+        is_stream = request_body.get("stream", False)
+        url = url_path_join(runtime_configs["service_url"], "migrate")
+
+        def _on_chunk(chunk: bytes):
+            self.write(chunk)
+            self.flush()
+
+        try:
+            if is_stream:
+                yield make_streaming_request(url, json.dumps(request_body), _on_chunk)
+            else:
+                result = make_non_streaming_request(url, request_body)
+        except requests.exceptions.HTTPError as err:
+            self.set_status(err.response.status_code)
+            try:
+                self.finish(json.dumps(err.response.json()))
+            except Exception:
+                self.finish(json.dumps({"error": "Request failed", "status": err.response.status_code}))
+        except Exception as e:
+            # Handle other errors (timeouts, connection errors, etc.)
+            print(f"Error in prompt handler: {e}")
+            self.set_status(500)
+            self.finish(json.dumps({"error": str(e), "type": "server_error"}))
+        else:
+            if is_stream:
+                self.finish()
+            else:
+                self.finish(json.dumps(result))
+
+
 def setup_handlers(web_app):
     host_pattern = ".*$"
     id_regex = r"(?P<id>[\w\-\_\.\:]+)"  # valid chars: alphanum | "-" | "_" | "." | ":"
@@ -604,6 +639,7 @@ def setup_handlers(web_app):
         (f"{base_url}/model/{id_regex}/prompt", PromptHandler),
         (f"{base_url}/prompt/{id_regex}/acceptance", PromptAcceptanceHandler),
         (f"{base_url}/feedback", FeedbackHandler),
+        (f"{base_url}/migrate", MigrationHandler),
     ]
     web_app.add_handlers(host_pattern, handlers)
     init_token()

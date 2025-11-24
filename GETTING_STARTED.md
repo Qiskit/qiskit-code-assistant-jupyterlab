@@ -131,6 +131,47 @@ There are a few settings we recommend to edit in your user settings.
 
 6. Response streaming can be enabled by checking the `enableStreaming` setting.
 
+### Code Migration Feature
+
+The Qiskit Code Assistant includes a code migration feature that helps you modernize legacy Qiskit code:
+
+#### How to Use
+
+1. **Migrate a Single Cell**:
+   - Locate the ✨ sparkle button in a code cell's toolbar
+   - Click the sparkle button to start migration
+   - Confirm the migration dialog
+   - The cell content will be updated with migrated code
+
+2. **Migrate Entire Notebook**:
+   - Click the ✨ sparkle button in the notebook toolbar (located next to the cell type dropdown)
+   - Confirm the migration dialog
+   - All code cells will be migrated automatically
+   - Markdown cells are preserved unchanged
+
+#### Features
+
+- **Smart Detection**: Automatically identifies code that needs migration
+- **Real-time Streaming**: When streaming is enabled, you'll see the migration progress in real-time
+- **Safe Operations**: Always shows a confirmation dialog before making changes
+- **Selective Processing**: Only processes code cells; markdown cells are skipped
+- **Validation**: Checks for empty cells and invalid inputs
+- **Error Handling**: Clear error messages guide you if something goes wrong
+
+#### Settings
+
+The migration feature respects the `enableStreaming` setting:
+
+- **Streaming Enabled**: See migration results appear progressively as they're generated
+- **Streaming Disabled**: Migration completes before updating cells (better for slower connections)
+
+#### Best Practices
+
+- Always review migrated code before running it
+- Test migrated code in a copy of your notebook first
+- Keep a backup of your original notebooks
+- Run migration on one cell at a time for large, complex cells
+
 ## Troubleshooting
 
 If you are seeing the frontend extension, but it is not working, check that the server
@@ -146,3 +187,5 @@ extension, check the frontend extension is installed:
 ```bash
 jupyter labextension list
 ```
+
+**Note**: The migration feature is still under development and its gated to a few set of testers. When it's fully released, it will be open for any user which is part of a IBM Quantum Premium plan.
