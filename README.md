@@ -102,7 +102,7 @@ The migration feature automatically:
 - Preserves your code structure and comments
 - Skips markdown cells and empty code cells
 
-**Note**: Migration requires an active API connection to IBM Quantum Cloud or a compatible local LLM service.
+**Note**: The migration feature is still under development and its gated to a few set of testers. When it's fully released, it will be open for any user which is part of a IBM Quantum Premium plan.
 
 ## Contributing
 

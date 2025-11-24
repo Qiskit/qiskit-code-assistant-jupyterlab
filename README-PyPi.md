@@ -197,7 +197,7 @@ There are a few settings we recommend to edit in your user settings.
 
 ### Code Migration
 
-The extension includes a powerful code migration feature to help modernize your Qiskit code:
+The extension includes a code migration feature to help modernize your Qiskit code:
 
 #### Migrate a Single Cell
 
@@ -217,6 +217,8 @@ The extension includes a powerful code migration feature to help modernize your 
 - **API Updates**: Modernizes deprecated APIs and patterns
 - **Streaming Support**: See migration progress in real-time when streaming is enabled
 - **Safe Operations**: Always asks for confirmation before making changes
+
+**Note**: The migration feature is still under development and its gated to a few set of testers. When it's fully released, it will be open for any user which is part of a IBM Quantum Premium plan.
 
 ## Terms of use
 

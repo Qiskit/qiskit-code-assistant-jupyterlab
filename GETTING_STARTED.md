@@ -133,7 +133,7 @@ There are a few settings we recommend to edit in your user settings.
 
 ### Code Migration Feature
 
-The Qiskit Code Assistant includes a powerful code migration feature that helps you modernize legacy Qiskit code:
+The Qiskit Code Assistant includes a code migration feature that helps you modernize legacy Qiskit code:
 
 #### How to Use
 
@@ -187,3 +187,5 @@ extension, check the frontend extension is installed:
 ```bash
 jupyter labextension list
 ```
+
+**Note**: The migration feature is still under development and its gated to a few set of testers. When it's fully released, it will be open for any user which is part of a IBM Quantum Premium plan.
