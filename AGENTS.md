@@ -3,6 +3,7 @@
 This file provides guidance to AI development assistants when working with code in this repository.
 
 **Supported AI Assistants:**
+
 - IBM Bob
 - Claude Code
 - GitHub Copilot
@@ -16,6 +17,7 @@ This file provides guidance to AI development assistants when working with code 
 qiskit-code-assistant-jupyterlab is a JupyterLab extension that provides AI-powered code completion for quantum computing development using Qiskit. It integrates with LLM APIs (IBM Quantum Cloud or OpenAI-compatible endpoints) to provide intelligent, context-aware code suggestions for Python quantum programs.
 
 ### Core Purpose
+
 - Accelerate Qiskit code development with AI-powered completions
 - Help developers learn Qiskit best practices through suggestions
 - Support migration from old Qiskit to v2.x
@@ -23,6 +25,7 @@ qiskit-code-assistant-jupyterlab is a JupyterLab extension that provides AI-powe
 - Work both with cloud (IBM Quantum) and local (Ollama) deployments
 
 ### Key Technologies
+
 - **Extension Platform**: JupyterLab Extension API (v4.3.0+)
 - **Language**: TypeScript (strict mode)
 - **Backend**: Python server extension
@@ -34,6 +37,7 @@ qiskit-code-assistant-jupyterlab is a JupyterLab extension that provides AI-powe
 ## Architecture
 
 ### Component Structure
+
 1. **Extension Entry Point** ([src/index.ts](src/index.ts)):
    - Main plugin initialization
    - Registers completion provider and status bar widget
@@ -67,6 +71,7 @@ qiskit-code-assistant-jupyterlab is a JupyterLab extension that provides AI-powe
    - Handles server-side processing
 
 ### Data Flow
+
 ```
 User Types Code → JupyterLab Inline Completion Trigger
                            ↓
@@ -86,7 +91,9 @@ User Types Code → JupyterLab Inline Completion Trigger
 ## Key Components
 
 ### Configuration Settings
+
 All extension settings are in schema/plugin.json:
+
 - `apiUrl`: API endpoint (default: https://qiskit-code-assistant.quantum.ibm.com)
 - `apiToken`: API authentication token
 - `selectedCredential`: Selected credential from ~/.qiskit/qiskit-ibm.json
@@ -97,6 +104,7 @@ All extension settings are in schema/plugin.json:
 - `maxTokens`: Maximum tokens in response (default: 1000)
 
 ### Core Files and Directories
+
 - `src/index.ts`: Main extension entry point
 - `src/QiskitCompletionProvider.ts`: Completion provider implementation
 - `src/StatusBarWidget.ts`: Status bar UI
@@ -120,6 +128,7 @@ All extension settings are in schema/plugin.json:
    - Git
 
 2. **Installation**:
+
    ```bash
    # Clone the repository
    git clone https://github.com/Qiskit/qiskit-code-assistant-jupyterlab.git
@@ -140,6 +149,7 @@ All extension settings are in schema/plugin.json:
    ```
 
 3. **Running from Source**:
+
    ```bash
    # Watch for changes in one terminal
    jlpm watch
@@ -147,10 +157,12 @@ All extension settings are in schema/plugin.json:
    # Run JupyterLab in another terminal
    jupyter lab
    ```
+
    - Refresh JupyterLab to see changes
    - May need to wait several seconds for extension rebuild
 
 4. **Building for Production**:
+
    ```bash
    # Build production version
    jlpm build:prod
@@ -200,13 +212,12 @@ All extension settings are in schema/plugin.json:
 ### Adding New Features
 
 1. **Adding a New Service**:
+
    ```typescript
    // src/service/myNewService.ts
    import { requestAPI } from './api';
 
-   export async function myServiceFunction(
-     params: any
-   ): Promise<any> {
+   export async function myServiceFunction(params: any): Promise<any> {
      return requestAPI('my-endpoint', {
        method: 'POST',
        body: JSON.stringify(params)
@@ -234,6 +245,7 @@ All extension settings are in schema/plugin.json:
 ## Common Tasks
 
 ### Building and Testing
+
 ```bash
 # Install dependencies
 jlpm install
@@ -270,6 +282,7 @@ jlpm prettier
 ```
 
 **For comprehensive testing documentation**, see [TESTING.md](TESTING.md) which covers:
+
 - Test structure and organization
 - Writing new tests with Jest + ts-jest
 - Mocking JupyterLab dependencies
@@ -297,11 +310,13 @@ jlpm prettier
    - Verify API endpoint connectivity
 
 ### Release Process
+
 See [RELEASE.md](RELEASE.md) for complete release workflow.
 
 ## Documentation Structure
 
 ### User-Facing Documentation
+
 - [README.md](README.md): Installation, setup, features
 - [GETTING_STARTED.md](GETTING_STARTED.md): Getting started guide
 - [LOCAL_SETUP.md](LOCAL_SETUP.md): Local deployment with Ollama
@@ -309,6 +324,7 @@ See [RELEASE.md](RELEASE.md) for complete release workflow.
 - [docs/EULA.md](docs/EULA.md): Model license and terms
 
 ### Developer Documentation
+
 - [CONTRIBUTING.md](CONTRIBUTING.md): Contribution guidelines
 - [TESTING.md](TESTING.md): Testing guide
 - [RELEASE.md](RELEASE.md): Release workflow
@@ -316,6 +332,7 @@ See [RELEASE.md](RELEASE.md) for complete release workflow.
 ## Important Constraints
 
 ### What This Extension Does
+
 - **Code completion only**: Provides inline suggestions for Python/Qiskit code
 - **Multi-cell context**: Analyzes all cells before the current cell to provide context-aware suggestions
 - **Python notebooks**: Works with Jupyter notebooks (`.ipynb`)
@@ -323,6 +340,7 @@ See [RELEASE.md](RELEASE.md) for complete release workflow.
 - **Code migration**: Helps migrate legacy Qiskit code to v2.x
 
 ### What This Extension Does NOT Do
+
 - Does NOT analyze the entire notebook (only cells before the current cell)
 - Does NOT execute code or quantum circuits
 - Does NOT provide chat interface
@@ -331,6 +349,7 @@ See [RELEASE.md](RELEASE.md) for complete release workflow.
 - Does NOT store code on servers (privacy-preserving)
 
 ### EULA Restrictions
+
 - **Beta/Preview service**: No SLA, experimental features
 - **Authorized use only**: Research, education, testing, evaluation
 - **No commercial use**: Personal/educational use only
@@ -453,7 +472,7 @@ When helping with this repository:
 
 **Want to add a feature?** → Start in [CONTRIBUTING.md](CONTRIBUTING.md)
 
-**Fixing a bug?** → Write test first in [src/__tests__/](src/__tests__/), see [TESTING.md](TESTING.md)
+**Fixing a bug?** → Write test first in [src/**tests**/](src/__tests__/), see [TESTING.md](TESTING.md)
 
 **Updating docs?** → User docs in [README.md](README.md), technical in `docs/`
 

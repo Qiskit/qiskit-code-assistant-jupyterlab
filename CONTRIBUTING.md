@@ -92,6 +92,7 @@ This repository includes [AGENTS.md](AGENTS.md), a comprehensive guide designed 
 ### What's in AGENTS.md?
 
 The file provides AI assistants with:
+
 - **Project overview** - What this extension does and its core technologies
 - **Architecture guide** - Component structure, data flow, and key files
 - **Development setup** - Environment setup and common development tasks
