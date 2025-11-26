@@ -108,6 +108,10 @@ The migration feature automatically:
 
 To learn more about contributing or installing locally read [CONTRIBUTING](CONTRIBUTING.md).
 
+### AI Development Assistant Support
+
+This repository includes AI-generated code and offers comprehensive guidance for AI coding assistants (like [IBM Bob](https://www.ibm.com/products/bob), Claude Code, GitHub Copilot, Cursor AI, and others) in [AGENTS.md](AGENTS.md). This helps AI assistants provide more accurate, context-aware suggestions when working with this codebase. See the [AI Development Assistant Support](CONTRIBUTING.md#ai-development-assistant-support) section in our Contributing Guide for more details.
+
 ## Qiskit Code Assistant Terms of use
 
 - [End User License Agreement (EULA)](docs/EULA.md) acceptance required before starting to use the model
