@@ -182,10 +182,14 @@ All extension settings are in schema/plugin.json:
 
 4. **Testing**:
    - Write tests in `src/__tests__/` or `src/service/__tests__/`
-   - Use Jest for frontend tests
+   - Use Jest + ts-jest for frontend tests
    - Mock JupyterLab API using `src/__mocks__/`
+   - Target >80% code coverage on critical paths
+   - Test categories: API services, autocomplete, completion providers, utilities, credentials
    - Run tests: `jlpm test`
-   - Coverage: `jlpm test:coverage`
+   - Watch mode: `jlpm test:watch` (useful during development)
+   - Coverage: `jlpm test:coverage` (generates HTML report in `coverage/`)
+   - See [TESTING.md](TESTING.md) for comprehensive testing guide
 
 5. **Debugging**:
    - Check browser console in JupyterLab
@@ -249,12 +253,29 @@ jlpm test:watch
 # Run tests with coverage
 jlpm test:coverage
 
+# Run specific test file
+jlpm test src/service/__tests__/api.test.ts
+
+# Run tests matching a pattern
+jlpm test --testNamePattern="should handle errors"
+
+# Run with verbose output
+jlpm test --verbose
+
 # Lint code
 jlpm lint
 
 # Format code
 jlpm prettier
 ```
+
+**For comprehensive testing documentation**, see [TESTING.md](TESTING.md) which covers:
+- Test structure and organization
+- Writing new tests with Jest + ts-jest
+- Mocking JupyterLab dependencies
+- Testing async generators and streaming
+- CI/CD integration and coverage reporting
+- Debugging tests and best practices
 
 ### Debugging Workflows
 
@@ -432,7 +453,7 @@ When helping with this repository:
 
 **Want to add a feature?** → Start in [CONTRIBUTING.md](CONTRIBUTING.md)
 
-**Fixing a bug?** → Write test first in [src/__tests__/](src/__tests__/)
+**Fixing a bug?** → Write test first in [src/__tests__/](src/__tests__/), see [TESTING.md](TESTING.md)
 
 **Updating docs?** → User docs in [README.md](README.md), technical in `docs/`
 
@@ -440,7 +461,7 @@ When helping with this repository:
 
 **Need architecture overview?** → Read [src/index.ts](src/index.ts)
 
-**Testing?** → See [TESTING.md](TESTING.md)
+**Testing & mocks?** → See [TESTING.md](TESTING.md) - Jest, comprehensive mocks, >80% coverage
 
 **Release process?** → See [RELEASE.md](RELEASE.md)
 
