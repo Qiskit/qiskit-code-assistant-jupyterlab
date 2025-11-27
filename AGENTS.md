@@ -30,7 +30,7 @@ qiskit-code-assistant-jupyterlab is a JupyterLab extension that provides AI-powe
 - **Language**: TypeScript (strict mode)
 - **Backend**: Python server extension
 - **LLM Integration**: IBM Quantum Cloud API, OpenAI-compatible APIs
-- **Model**: `mistral-small-3.2-24b-qiskit` (cloud) or local models via Ollama
+- **Model**: `mistral-small-3.2-24b-qiskit` (via cloud) or other Qiskit Code Assistant LLMs (available through https://huggingface.co/Qiskit/models) via Ollama.
 - **Streaming**: Server-Sent Events (SSE) with circuit breaker pattern
 - **Testing**: Jest for frontend, pytest for backend
 
