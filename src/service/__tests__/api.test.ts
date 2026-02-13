@@ -254,13 +254,10 @@ describe('API Service', () => {
 
       const result = await api.postDisclaimerAccept('disclaimer-1', 'model-1');
 
-      expect(mockRequestAPI).toHaveBeenCalledWith(
-        'models/model-1/disclaimer',
-        {
-          method: 'POST',
-          body: JSON.stringify({ disclaimer: 'disclaimer-1', accepted: true })
-        }
-      );
+      expect(mockRequestAPI).toHaveBeenCalledWith('models/model-1/disclaimer', {
+        method: 'POST',
+        body: JSON.stringify({ disclaimer: 'disclaimer-1', accepted: true })
+      });
       expect(result).toEqual({ message: 'Accepted' });
     });
 
