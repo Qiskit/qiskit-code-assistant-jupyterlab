@@ -159,7 +159,7 @@ pip install --upgrade qiskit_code_assistant_jupyterlab
 
 - 📖 Read the full [Local Setup Guide](LOCAL_SETUP.md) for advanced configuration
 - 📖 Read the [Getting Started Guide](GETTING_STARTED.md) for cloud setup
-- 🎓 Check out [Qiskit tutorials](https://docs.quantum.ibm.com) to learn more
+- 🎓 Check out [Qiskit tutorials](https://quantum.cloud.ibm.com/docs) to learn more
 - 💬 Join the [Qiskit Slack](https://qisk.it/join-slack) community
 
 ## Choosing the Right Model (Local Setup)
