@@ -191,7 +191,7 @@ describe('API Service', () => {
 
       const result = await api.getModel('model-1');
 
-      expect(mockRequestAPI).toHaveBeenCalledWith('model/model-1');
+      expect(mockRequestAPI).toHaveBeenCalledWith('models/model-1');
       expect(result).toEqual(mockModel);
     });
 
@@ -223,7 +223,7 @@ describe('API Service', () => {
 
       const result = await api.getModelDisclaimer('model-1');
 
-      expect(mockRequestAPI).toHaveBeenCalledWith('model/model-1/disclaimer');
+      expect(mockRequestAPI).toHaveBeenCalledWith('models/model-1/disclaimer');
       expect(result).toEqual(mockDisclaimer);
     });
 
@@ -255,10 +255,10 @@ describe('API Service', () => {
       const result = await api.postDisclaimerAccept('disclaimer-1', 'model-1');
 
       expect(mockRequestAPI).toHaveBeenCalledWith(
-        'disclaimer/disclaimer-1/acceptance',
+        'models/model-1/disclaimer',
         {
           method: 'POST',
-          body: JSON.stringify({ model: 'model-1', accepted: true })
+          body: JSON.stringify({ disclaimer: 'disclaimer-1', accepted: true })
         }
       );
       expect(result).toEqual({ message: 'Accepted' });

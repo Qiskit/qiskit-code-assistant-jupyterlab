@@ -27,6 +27,7 @@ from jupyter_server.utils import url_path_join
 from qiskit_ibm_runtime import QiskitRuntimeService
 
 OPENAI_VERSION = "v1"
+QCA_API_VERSION = "v1"
 STREAM_DATA_PREFIX = "data: "
 
 runtime_configs = {
@@ -224,10 +225,10 @@ def get_header():
     return header
 
 
-def convert_openai(model):
+def transform_model(model, is_openai):
     return {
         "_id": model["id"],
-        "disclaimer": {"accepted": "true"},
+        "disclaimer": {"accepted": is_openai},
         "display_name": model["id"],
         "doc_link": "",
         "license": {"name": "", "link": ""},
@@ -283,30 +284,22 @@ class ModelsHandler(APIHandler):
     def get(self):
         if runtime_configs["is_openai"]:
             url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "models")
-            models = []
-            try:
-                r = requests.get(url, headers=get_header())
-                r.raise_for_status()
-
-                if r.ok:
-                    data = r.json()["data"]
-                    models = list(map(convert_openai, data))
-            except requests.exceptions.HTTPError as err:
-                self.set_status(err.response.status_code)
-                self.finish(json.dumps(err.response.json()))
-            else:
-                self.finish(json.dumps({"models": models}))
         else:
-            url = url_path_join(runtime_configs["service_url"], "models")
+            url = url_path_join(runtime_configs["service_url"], QCA_API_VERSION, "models")
 
-            try:
-                r = requests.get(url, headers=get_header())
-                r.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                self.set_status(err.response.status_code)
-                self.finish(json.dumps(err.response.json()))
-            else:
-                self.finish(json.dumps(r.json()))
+        models = []
+        try:
+            r = requests.get(url, headers=get_header())
+            r.raise_for_status()
+
+            if r.ok:
+                data = r.json()["data"]
+                models = list(map(transform_model, data, [runtime_configs["is_openai"] * len(data)]))
+        except requests.exceptions.HTTPError as err:
+            self.set_status(err.response.status_code)
+            self.finish(json.dumps(err.response.json()))
+        else:
+            self.finish(json.dumps({"models": models}))
 
 
 class ModelHandler(APIHandler):
@@ -314,29 +307,21 @@ class ModelHandler(APIHandler):
     def get(self, id):
         if runtime_configs["is_openai"]:
             url = url_path_join(runtime_configs["service_url"], OPENAI_VERSION, "models", id)
-            model = {}
-            try:
-                r = requests.get(url, headers=get_header())
-                r.raise_for_status()
-
-                if r.ok:
-                    model = convert_openai(r.json())
-            except requests.exceptions.HTTPError as err:
-                self.set_status(err.response.status_code)
-                self.finish(json.dumps(err.response.json()))
-            else:
-                self.finish(json.dumps(model))
         else:
-            url = url_path_join(runtime_configs["service_url"], "model", id)
+            url = url_path_join(runtime_configs["service_url"], QCA_API_VERSION, "models", id)
 
-            try:
-                r = requests.get(url, headers=get_header())
-                r.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                self.set_status(err.response.status_code)
-                self.finish(json.dumps(err.response.json()))
-            else:
-                self.finish(json.dumps(r.json()))
+        model = {}
+        try:
+            r = requests.get(url, headers=get_header())
+            r.raise_for_status()
+
+            if r.ok:
+                model = transform_model(r.json(), runtime_configs["is_openai"])
+        except requests.exceptions.HTTPError as err:
+            self.set_status(err.response.status_code)
+            self.finish(json.dumps(err.response.json()))
+        else:
+            self.finish(json.dumps(model))
 
 
 class DisclaimerHandler(APIHandler):
@@ -345,7 +330,7 @@ class DisclaimerHandler(APIHandler):
         if runtime_configs["is_openai"]:
             self.finish(json.dumps({"accepted": "true"}))
         else:
-            url = url_path_join(runtime_configs["service_url"], "model", id, "disclaimer")
+            url = url_path_join(runtime_configs["service_url"], QCA_API_VERSION, "models", id, "disclaimer")
 
             try:
                 r = requests.get(url, headers=get_header())
@@ -356,16 +341,12 @@ class DisclaimerHandler(APIHandler):
             else:
                 self.finish(json.dumps(r.json()))
 
-
-class DisclaimerAcceptanceHandler(APIHandler):
     @tornado.web.authenticated
     def post(self, id):
         if runtime_configs["is_openai"]:
             self.finish(json.dumps({"success": "true"}))
         else:
-            url = url_path_join(
-                runtime_configs["service_url"], "disclaimer", id, "acceptance"
-            )
+            url = url_path_join(runtime_configs["service_url"], QCA_API_VERSION, "models", id, "disclaimer")
 
             try:
                 r = requests.post(url, headers=get_header(), json=self.get_json_body())
@@ -393,21 +374,24 @@ class PromptHandler(APIHandler):
                 "stream": is_stream
             }
         else:
-            url = url_path_join(runtime_configs["service_url"], "model", id, "prompt")
+            url = url_path_join(runtime_configs["service_url"], QCA_API_VERSION, "chat", "completions")
+            request_body = {
+                "model": id,
+                "messages": [
+                    {"role": "user", "content": request_body["input"]},
+                ],
+                "stream": is_stream
+            }
 
         def _on_chunk(chunk: bytes):
             try:
-                if is_openai:
-                    # Parse chunk - returns list of parsed SSE messages
-                    parsed_chunks = parse_streaming_chunk(chunk)
-                    if parsed_chunks:  # Check if we got any valid parsed chunks
-                        for parsed_chunk in parsed_chunks:
-                            # Convert each parsed chunk to our response format
-                            response = to_model_prompt_response(parsed_chunk)
-                            self.write(STREAM_DATA_PREFIX + json.dumps(response) + "\n")
-                        self.flush()
-                else:
-                    self.write(chunk)
+                # Parse chunk - returns list of parsed SSE messages
+                parsed_chunks = parse_streaming_chunk(chunk)
+                if parsed_chunks:  # Check if we got any valid parsed chunks
+                    for parsed_chunk in parsed_chunks:
+                        # Convert each parsed chunk to our response format
+                        response = to_model_prompt_response(parsed_chunk, is_openai, is_stream)
+                        self.write(STREAM_DATA_PREFIX + json.dumps(response) + "\n")
                     self.flush()
             except Exception as e:
                 # Log error but continue streaming
@@ -422,7 +406,7 @@ class PromptHandler(APIHandler):
                 yield make_streaming_request(url, json.dumps(request_body), _on_chunk)
             else:
                 non_streaming_response = make_non_streaming_request(url, request_body)
-                result = to_model_prompt_response(non_streaming_response) if is_openai else non_streaming_response
+                result = to_model_prompt_response(non_streaming_response, is_openai, is_stream)
         except requests.exceptions.HTTPError as err:
             self.set_status(err.response.status_code)
             try:
@@ -447,10 +431,15 @@ class PromptAcceptanceHandler(APIHandler):
         if runtime_configs["is_openai"]:
             self.finish(json.dumps({"success": "true"}))
         else:
-            url = url_path_join(runtime_configs["service_url"], "prompt", id, "acceptance")
+            url = url_path_join(runtime_configs["service_url"], QCA_API_VERSION, "completion", "acceptance")
+            request_body = self.get_json_body()
+            request_body = {
+                "completion": id,
+                "accepted": request_body["accepted"]
+            }
 
             try:
-                r = requests.post(url, headers=get_header(), json=self.get_json_body())
+                r = requests.post(url, headers=get_header(), json=request_body)
                 r.raise_for_status()
             except requests.exceptions.HTTPError as err:
                 self.set_status(err.response.status_code)
@@ -633,9 +622,8 @@ def setup_handlers(web_app):
         (f"{base_url}/token", TokenHandler),
         (f"{base_url}/credentials", CredentialsHandler),
         (f"{base_url}/models", ModelsHandler),
-        (f"{base_url}/model/{id_regex}", ModelHandler),
-        (f"{base_url}/model/{id_regex}/disclaimer", DisclaimerHandler),
-        (f"{base_url}/disclaimer/{id_regex}/acceptance", DisclaimerAcceptanceHandler),
+        (f"{base_url}/models/{id_regex}", ModelHandler),
+        (f"{base_url}/models/{id_regex}/disclaimer", DisclaimerHandler),
         (f"{base_url}/model/{id_regex}/prompt", PromptHandler),
         (f"{base_url}/prompt/{id_regex}/acceptance", PromptAcceptanceHandler),
         (f"{base_url}/feedback", FeedbackHandler),
@@ -675,12 +663,22 @@ def make_streaming_request(
     return client.fetch(request, raise_error=True)
 
 
-def to_model_prompt_response(response: dict) -> dict:
-    return {
-        "results": list(map(lambda c: {"generated_text": c["text"]}, response["choices"])),
-        "prompt_id": response["id"],
-        "created_at": datetime.fromtimestamp(int(response["created"])).isoformat()
-    } if response else {}
+def to_model_prompt_response(response: dict, is_openai: bool, is_stream: bool) -> dict:
+    if not response:
+        return {}
+    if is_openai:
+        return {
+            "results": list(map(lambda c: {"generated_text": c["text"]}, response["choices"])),
+            "prompt_id": response["id"],
+            "created_at": datetime.fromtimestamp(int(response["created"])).isoformat()
+        }
+    else:
+        return {
+            "results": list(map(lambda c: {"generated_text": c["delta" if is_stream else "message"]["content"]}, response["choices"])),
+            "prompt_id": response["id"],
+            "created_at": datetime.fromtimestamp(int(response["created"])).isoformat()
+        }
+
 
 
 def parse_streaming_chunk(chunk: bytes) -> list:

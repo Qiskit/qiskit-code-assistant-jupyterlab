@@ -128,9 +128,9 @@ export async function getModels(): Promise<IModelInfo[]> {
   });
 }
 
-// GET /model/{model_id}
+// GET /models/{model_id}
 export async function getModel(model_id: string): Promise<IModelInfo> {
-  return await requestAPI(`model/${model_id}`).then(async response => {
+  return await requestAPI(`models/${model_id}`).then(async response => {
     if (response.ok) {
       const model = await response.json();
       console.debug('model:', model);
@@ -147,11 +147,11 @@ export async function getModel(model_id: string): Promise<IModelInfo> {
   });
 }
 
-// GET /model/{model_id}/disclaimer
+// GET /models/{model_id}/disclaimer
 export async function getModelDisclaimer(
   model_id: string
 ): Promise<IModelDisclaimer> {
-  return await requestAPI(`model/${model_id}/disclaimer`).then(
+  return await requestAPI(`models/${model_id}/disclaimer`).then(
     async response => {
       if (response.ok) {
         return await response.json();
@@ -168,14 +168,14 @@ export async function getModelDisclaimer(
   );
 }
 
-// POST /disclaimer/{disclaimer_id}/acceptance
+// POST /models/{model_id}/disclaimer
 export async function postDisclaimerAccept(
   disclaimer_id: string,
   model: string
 ): Promise<IResponseMessage> {
-  return await requestAPI(`disclaimer/${disclaimer_id}/acceptance`, {
+  return await requestAPI(`models/${model}/disclaimer`, {
     method: 'POST',
-    body: JSON.stringify({ model, accepted: true })
+    body: JSON.stringify({ disclaimer: disclaimer_id, accepted: true })
   }).then(async response => {
     if (response.ok) {
       return await response.json();
@@ -217,7 +217,6 @@ export async function postModelPrompt(
   });
 }
 
-// POST /model/{model_id}/prompt
 /**
  * Helper function to parse and validate a single SSE data line
  * @param line The trimmed line to parse
@@ -268,6 +267,7 @@ function parseSSEDataLine(
   }
 }
 
+// POST /model/{model_id}/prompt
 export async function* postModelPromptStreaming(
   model_id: string,
   input: string,

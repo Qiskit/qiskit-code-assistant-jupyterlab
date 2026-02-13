@@ -68,7 +68,7 @@ export interface IModelPromptResponse {
 }
 
 export interface IModelDisclaimer {
-  _id: string;
+  id: string;
   version: string;
   title: string;
   body: string;
