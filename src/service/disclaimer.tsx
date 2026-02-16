@@ -37,7 +37,7 @@ export async function showDisclaimer(model_id: string): Promise<boolean> {
     }).then(async (result: any) => {
       // Do nothing if the cancel button is pressed
       if (result.button.accept) {
-        return await postDisclaimerAccept(disclaimerRes._id, model_id).then(
+        return await postDisclaimerAccept(disclaimerRes.id, model_id).then(
           async (res: IResponseMessage) => {
             return await refreshModelsList().then(() => {
               return res.success;
