@@ -1,6 +1,10 @@
 # Qiskit Code Assistant (Beta) Jupyterlab Extension
 
-[![Build](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Build/badge.svg)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/actions/workflows/build.yml)
+> [!IMPORTANT]
+> After the [discontinuation of the Qiskit Code Assistant service](https://quantum.cloud.ibm.com/announcements/en/product-updates/2026-04-28-qiskit-code-assistant-service-to-sunset), this repository is no longer maintained and may contain errors. Contributions to this repo are no longer accepted.
+
+
+<!--[![Build](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/workflows/Build/badge.svg)](https://github.com/Qiskit/qiskit-code-assistant-jupyterlab/actions/workflows/build.yml)-->
 
 A JupyterLab extension for Qiskit Code Assistant
 
